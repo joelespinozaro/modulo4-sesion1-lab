@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agentes y Orquestación M4 S1</title>
+<meta name="description" content="Sesión visual del Módulo 4 Sesión 1 de AI Solution Architect: anatomía de un agente, patrones, function calling, MCP, memoria, multiagente, human-in-the-loop, frameworks y laboratorios con LangGraph y Google ADK.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F5F7; --card:#FFFFFF; --soft:#F0F2F5; --soft2:#E7EAF0;
+  --ink:#16243F; --body:#3D4757; --muted:#7C8596; --line:#E2E6EC;
+  --coral:#FF7A50; --coral-d:#C84A22; --coral-t:#FFF0EA;
+  --cyan:#17BFB0; --cyan-t:#DDF5F2;
+  --green:#12805F; --green-t:#E2F3EC; --red:#C93B32; --red-t:#FBEAE8;
+  --blue:#2A6BB0; --blue-t:#E8F0FA; --amber:#B37D0C; --amber-t:#FBF1DD;
+  --violet:#6A4BA8; --violet-t:#EFEAF8;
+  --sd:#E6EDF7; --sd2:#93A3BF; --sd3:#5B6E8F;
+  --disp:"Space Grotesk",system-ui,sans-serif;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --rail:284px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--paper);color:var(--body);font-family:var(--sans);font-size:15px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.app{display:flex;height:100vh;overflow:hidden}
+::selection{background:var(--coral);color:#fff}
+
+/* ---------- rail ---------- */
+.rail{width:var(--rail);flex:0 0 var(--rail);background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
+.brand{padding:22px 22px 18px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.brand .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--coral);margin:0}
+.brand h1{font-family:var(--disp);font-size:17.5px;font-weight:700;color:var(--ink);margin:7px 0 3px;line-height:1.28;letter-spacing:-.015em}
+.brand p{font-size:11.5px;color:var(--muted);margin:0}
+nav{padding:8px 0 60px}
+.ng{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:17px 22px 7px}
+.ni{display:flex;gap:11px;align-items:baseline;width:100%;text-align:left;background:none;border:0;color:var(--body);font-family:var(--sans);font-size:13.4px;padding:7px 22px;cursor:pointer;border-left:2px solid transparent;line-height:1.4;transition:background .18s,color .18s}
+.ni:hover{background:var(--soft)}
+.ni .n{font-family:var(--mono);font-size:10.5px;color:var(--muted);flex:0 0 18px;transition:color .18s}
+.ni.on{background:var(--coral-t);border-left-color:var(--coral);color:var(--ink);font-weight:600}
+.ni.on .n{color:var(--coral-d)}
+.ni .dn{margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--coral);opacity:0;transform:scale(.4);transition:all .25s}
+.ni.on .dn{opacity:1;transform:scale(1)}
+
+/* ---------- main ---------- */
+.main{flex:1;overflow-y:auto;scroll-behavior:smooth;position:relative}
+.topbar{position:sticky;top:0;z-index:40;background:rgba(244,245,247,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:10px 40px}
+.topbar .tt{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-right:auto;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:12.5px;font-weight:500;color:var(--body);padding:7px 13px;cursor:pointer;transition:all .18s}
+.btn:hover{border-color:var(--coral);color:var(--coral-d);transform:translateY(-1px)}
+.prog{flex:0 0 110px;height:4px;background:var(--soft2);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--coral),#FFA47E);transition:width .35s cubic-bezier(.4,0,.2,1)}
+.wrap{max-width:1160px;margin:0 auto;padding:0 48px 170px}
+
+/* ---------- hero ---------- */
+.hero{position:relative;margin:22px 0 8px;border-radius:20px;overflow:hidden;background:radial-gradient(130% 130% at 12% 0%,#1B2C4B 0%,#0A1120 62%);color:var(--sd);padding:38px 38px 0}
+.hero .hk{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--coral);margin:0 0 12px;opacity:0;animation:up .6s .05s forwards}
+.hero h1{font-family:var(--disp);font-size:40px;line-height:1.08;letter-spacing:-.03em;font-weight:700;color:#fff;margin:0 0 12px;max-width:16ch;opacity:0;animation:up .6s .16s forwards}
+.hero h1 em{font-style:normal;color:var(--coral)}
+.hero .hs{font-size:16px;color:var(--sd2);max-width:56ch;margin:0 0 22px;opacity:0;animation:up .6s .28s forwards}
+.hero .hmeta{display:flex;gap:8px;flex-wrap:wrap;opacity:0;animation:up .6s .4s forwards}
+.hmeta span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:4px 11px;color:var(--sd2)}
+.hero .hsvg{margin:24px -38px 0;opacity:0;animation:up .7s .5s forwards}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---------- steps ---------- */
+section.step{padding:46px 0 12px;border-top:1px solid var(--line);scroll-margin-top:62px}
+section.step:first-of-type{border-top:0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--coral-d);margin:0 0 8px;display:flex;align-items:center;gap:9px}
+.eyebrow:before{content:"";width:22px;height:1.5px;background:var(--coral);display:block}
+h2{font-family:var(--disp);font-size:30px;font-weight:700;color:var(--ink);letter-spacing:-.025em;line-height:1.15;margin:0 0 12px}
+h3{font-family:var(--disp);font-size:17px;font-weight:700;color:var(--ink);margin:32px 0 8px}
+p{margin:0 0 13px}
+.lead{font-size:17px;color:var(--body);line-height:1.6}
+ul{margin:0 0 14px;padding-left:20px}li{margin-bottom:6px}
+code.i{font-family:var(--mono);font-size:12.8px;background:var(--soft2);border-radius:4px;padding:1px 5px;color:var(--ink)}
+b.hl{color:var(--ink)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .55s ease,transform .55s cubic-bezier(.2,.7,.3,1)}
+.rv.in{opacity:1;transform:none}
+
+/* ---------- callouts ---------- */
+.call{border-radius:12px;padding:14px 17px;margin:0 0 14px;font-size:14px;border:1px solid;position:relative}
+.call .t{font-weight:600;display:block;margin-bottom:2px;font-size:13px}
+.call.info{background:var(--blue-t);border-color:#C7DAF1;color:#1F4E82}
+.call.warn{background:var(--amber-t);border-color:#EBD9AE;color:#84600B}
+.call.ok{background:var(--green-t);border-color:#BFE3D2;color:#0C6349}
+.call.bad{background:var(--red-t);border-color:#F1CBC7;color:#96291F}
+.call p:last-child{margin-bottom:0}
+
+/* ---------- artifact shell ---------- */
+.art{background:var(--card);border:1px solid var(--line);border-radius:17px;margin:0 0 16px;overflow:hidden;box-shadow:0 2px 4px rgba(20,35,65,.05),0 14px 34px -22px rgba(20,35,65,.35)}
+.art .ahead{display:flex;align-items:center;gap:11px;padding:13px 17px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#FFF,#FAFBFD);flex-wrap:wrap}
+.art .ahead .at{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:5px;padding:3px 8px}
+.art .ahead .an{font-family:var(--disp);font-size:14.5px;font-weight:700;color:var(--ink);margin-right:auto}
+.art .abody{padding:18px}
+.project-btn{margin-left:auto;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:6px 10px;font:600 11px var(--sans);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .18s}
+.project-btn:hover{border-color:var(--coral);color:var(--coral-d);transform:translateY(-1px)}
+.artifact-backdrop{position:fixed;inset:0;background:rgba(5,10,19,.78);backdrop-filter:blur(8px);z-index:900;opacity:0;pointer-events:none;transition:opacity .22s}
+body.artifact-open{overflow:hidden}
+body.artifact-open .artifact-backdrop{opacity:1;pointer-events:auto}
+.art.artifact-focus{position:fixed;inset:16px;z-index:920;margin:0;overflow:auto;border-radius:20px;box-shadow:0 32px 90px rgba(0,0,0,.5);animation:focusIn .25s cubic-bezier(.2,.8,.3,1)}
+.art.artifact-focus .ahead{position:sticky;top:0;z-index:20;padding:16px 22px;box-shadow:0 8px 20px rgba(22,36,63,.08)}
+.art.artifact-focus .abody{padding:24px 32px}
+.art.artifact-focus .stage svg{max-height:58vh}
+.art.artifact-focus .project-btn{background:var(--ink);border-color:var(--ink);color:#fff}
+@keyframes focusIn{from{opacity:.5;transform:scale(.96)}to{opacity:1;transform:none}}
+.actrl{display:flex;align-items:center;gap:9px;padding:11px 17px;border-top:1px solid var(--line);background:var(--soft);flex-wrap:wrap}
+.actrl .dots{display:flex;gap:6px;margin-right:auto}
+.actrl .dots i{width:24px;height:5px;border-radius:3px;background:var(--soft2);cursor:pointer;display:block;transition:all .28s}
+.actrl .dots i.on{background:var(--coral);width:40px}
+.actrl .dots i.done{background:#F8B79C}
+.actrl .sc{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:6px}
+.abtn{border:1px solid var(--line);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:12.5px;font-weight:500;color:var(--body);padding:7px 15px;cursor:pointer;transition:all .18s}
+.abtn:hover:not(:disabled){border-color:var(--coral);color:var(--coral-d)}
+.abtn:disabled{opacity:.35;cursor:default}
+.abtn.pri{background:var(--coral);border-color:var(--coral);color:#fff;box-shadow:0 4px 12px -4px rgba(255,122,80,.7)}
+.abtn.pri:hover:not(:disabled){background:var(--coral-d);border-color:var(--coral-d);color:#fff;transform:translateY(-1px)}
+.cap{background:var(--soft);border-radius:12px;padding:13px 15px;font-size:13.6px;min-height:66px;border:1px solid var(--line)}
+.cap .ct{font-family:var(--disp);font-size:14px;font-weight:700;color:var(--ink);display:block;margin-bottom:3px}
+.cap.anim{animation:capIn .38s ease}
+@keyframes capIn{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ---------- stage (dark canvas) ---------- */
+.stage{position:relative;border-radius:14px;overflow:hidden;background:radial-gradient(120% 130% at 18% 0%,#1A2B4A 0%,#0A1120 65%);padding:6px}
+.stage:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:28px 28px;-webkit-mask-image:radial-gradient(circle at 50% 45%,#000,transparent 78%);mask-image:radial-gradient(circle at 50% 45%,#000,transparent 78%)}
+.stage svg{position:relative;display:block;width:100%;height:auto}
+.slabel{position:absolute;top:11px;left:14px;font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--sd3);z-index:2}
+.term{background:#0C1524;color:var(--sd);border-radius:12px;padding:13px 15px;font-family:var(--mono);font-size:12.4px;line-height:1.75;white-space:pre-wrap;margin-top:12px;min-height:72px;border:1px solid rgba(255,255,255,.07)}
+.term .lab{display:block;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--sd3);margin-bottom:7px}
+.term .good{color:#5FE0B4}.term .bad{color:#FF9A9A}.term .warnc{color:#FFC978}
+.term.anim{animation:capIn .4s ease}
+
+/* svg animation utils */
+.draw{stroke-dasharray:var(--L,400);stroke-dashoffset:var(--L,400);animation:draw .9s cubic-bezier(.3,.7,.3,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.pulse{animation:pl 2.2s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:.35}50%{opacity:1}}
+.blip{animation:blip 1.6s ease-in-out infinite}
+@keyframes blip{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.13);opacity:1}}
+.pop{animation:pop .42s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.drift{animation:drift 9s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(6px,-8px)}}
+.shake{animation:shk .5s}
+@keyframes shk{10%,90%{transform:translateX(-1px)}30%,70%{transform:translateX(3px)}50%{transform:translateX(-3px)}}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--card);border-radius:22px;font-family:var(--sans);font-size:12.4px;font-weight:500;color:var(--muted);padding:6px 14px;cursor:pointer;transition:all .2s}
+.tabs button:hover{border-color:var(--coral);color:var(--coral-d)}
+.tabs button.on{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 5px 14px -6px rgba(22,36,63,.8)}
+
+/* ---------- tables ---------- */
+table.t{width:100%;border-collapse:collapse;font-size:13px;margin:0 0 14px}
+table.t th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 9px;font-weight:500}
+table.t td{border-bottom:1px solid var(--line);padding:9px;vertical-align:top;transition:background .16s}
+table.t td b{color:var(--ink)}
+table.t tr:hover td{background:var(--coral-t)}
+
+/* ---------- cards ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:0 0 16px}
+.cardm{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;transition:transform .22s,box-shadow .22s,border-color .22s;position:relative;overflow:hidden}
+.cardm:hover{transform:translateY(-3px);box-shadow:0 14px 30px -20px rgba(20,35,65,.6);border-color:#F3C4B2}
+.cardm:before{content:"";position:absolute;left:0;top:0;height:3px;width:0;background:var(--coral);transition:width .35s}
+.cardm:hover:before{width:100%}
+.cardm .n{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--coral-d);margin-bottom:6px}
+.cardm .t{font-family:var(--disp);font-size:15px;font-weight:700;color:var(--ink);margin-bottom:5px;line-height:1.25}
+.cardm .d{font-size:12.9px;color:var(--body);line-height:1.5}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ---------- documento y chunks ---------- */
+.docv{background:#EEF2F7;border:1px solid #D6DDE7;border-radius:13px;padding:13px;color:#263650}
+.par{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:9px;transition:all .35s cubic-bezier(.2,.7,.3,1);position:relative}
+.par:last-child{margin-bottom:0}
+.par.parent-on{border-color:var(--violet);background:var(--violet-t);box-shadow:0 8px 24px -14px rgba(106,75,168,.9);transform:translateY(-2px)}
+.par .plab{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#425678;margin-bottom:7px;display:block;font-weight:600}
+.par.parent-on .plab{color:var(--violet)}
+.kid{display:block;font-size:13px;padding:6px 9px;border-radius:7px;border:1px dashed transparent;margin-bottom:4px;transition:all .3s ease;line-height:1.5}
+.kid:last-child{margin-bottom:0}
+.kid.hit{background:var(--coral-t);border-color:var(--coral);color:var(--ink);font-weight:500;box-shadow:0 6px 18px -12px rgba(255,122,80,1)}
+.kid.dim{opacity:.58}
+.kid .kn{font-family:var(--mono);font-size:10px;color:var(--muted);margin-right:7px}
+.sent{display:inline;padding:2px 1px;border-radius:4px;transition:all .35s ease}
+.sent.hit{background:var(--coral);color:#fff;font-weight:500;box-shadow:0 0 0 3px var(--coral-t)}
+.sent.win{background:var(--coral-t);color:var(--ink)}
+.sent.dim{opacity:.82;color:#53627A}
+.scan{position:relative;overflow:hidden}
+.scan:after{content:"";position:absolute;top:0;left:-40%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,122,80,.16),transparent);animation:scan 1.1s ease-out 1}
+@keyframes scan{to{left:110%}}
+
+/* ---------- ranking con reordenamiento ---------- */
+.rank{position:relative}
+.rrow{position:absolute;left:0;right:0;display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:8px 11px;font-size:12.9px;transition:transform .62s cubic-bezier(.4,0,.15,1),background .35s,border-color .35s,opacity .35s;will-change:transform}
+.rrow .pos{font-family:var(--mono);font-size:11px;color:var(--muted);flex:0 0 20px;transition:color .3s}
+.rrow .txt{flex:1;color:var(--body);line-height:1.35}
+.rrow .sc2{font-family:var(--mono);font-size:11.5px;color:var(--muted);flex:0 0 62px;text-align:right}
+.rrow.keep{background:var(--green-t);border-color:#9DD6BC}
+.rrow.keep .sc2{color:var(--green)}
+.rrow.drop{opacity:.3}
+.rrow.gold{background:var(--coral-t);border-color:var(--coral);box-shadow:0 8px 22px -14px rgba(255,122,80,1)}
+.rrow.gold .txt{color:var(--ink);font-weight:600}
+.bar{height:6px;background:var(--soft2);border-radius:3px;overflow:hidden;flex:0 0 66px}
+.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .55s cubic-bezier(.3,.8,.3,1)}
+.bar.cross i{background:linear-gradient(90deg,var(--coral),#FFB08E)}
+
+/* ---------- fusión RRF ---------- */
+.fuse{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fcol{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:11px}
+.fcol .fh{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.fcol .fh i{width:8px;height:8px;border-radius:2px;display:block}
+.fitem{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12.5px;margin-bottom:6px;display:flex;gap:8px;align-items:center;transition:all .45s cubic-bezier(.2,.7,.3,1)}
+.fitem .fn{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.fitem.gold{border-color:var(--coral);background:var(--coral-t);color:var(--ink);font-weight:500}
+.fitem.mute{opacity:.45}
+.fout{margin-top:12px}
+.frow{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:12.9px;animation:capIn .45s both}
+.frow .fs{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-left:auto}
+.frow.gold{border-color:var(--coral);background:var(--coral-t)}
+.frow.gold .fs{color:var(--coral-d);font-weight:500}
+
+/* ---------- matriz y gauges ---------- */
+.mx{display:grid;grid-template-columns:112px 1fr 1fr;gap:8px}
+.mx .hd{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;padding:6px}
+.mx .cell{background:var(--soft);border:1.5px solid var(--line);border-radius:12px;padding:13px 12px;cursor:pointer;text-align:left;font-family:var(--sans);font-size:12.7px;color:var(--body);line-height:1.45;transition:all .25s cubic-bezier(.2,.7,.3,1)}
+.mx .cell:hover{border-color:var(--coral);transform:translateY(-2px)}
+.mx .cell.on{background:var(--coral-t);border-color:var(--coral);color:var(--ink);box-shadow:0 10px 26px -16px rgba(255,122,80,1)}
+.mx .cell b{display:block;font-family:var(--disp);font-size:13.5px;color:var(--ink);margin-bottom:3px}
+.gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.gau{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center}
+.gau svg{width:82px;height:82px;display:block;margin:0 auto}
+.gau .gv{font-family:var(--disp);font-size:15px;font-weight:700;fill:var(--ink)}
+.gau .gname{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:5px;display:block;line-height:1.4}
+.gau .arc{transition:stroke-dashoffset .8s cubic-bezier(.3,.8,.3,1),stroke .5s}
+
+/* ---------- glosario compacto ---------- */
+.gsearch{width:100%;font-family:var(--sans);font-size:13.5px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin-bottom:12px;transition:all .2s}
+.gsearch:focus{outline:none;border-color:var(--coral);box-shadow:0 0 0 4px var(--coral-t)}
+.ggrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:12px!important}
+.gitem{border:1px solid var(--line);border-radius:11px;background:var(--card);animation:capIn .3s both;overflow:hidden;align-self:start}
+.gitem button{width:100%;border:0;background:transparent;padding:11px 12px;display:grid;grid-template-columns:1fr auto;gap:3px 8px;text-align:left;cursor:pointer;color:inherit}
+.gitem .gt{font-family:var(--disp);font-size:13.5px;font-weight:700;color:var(--ink)}
+.gitem .gs{font-family:var(--mono);font-size:9.5px;color:var(--coral-d);grid-column:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gitem .gx{grid-column:2;grid-row:1/3;align-self:center;font-size:16px;color:var(--muted);transition:transform .2s}
+.gitem .gd{font-size:12.8px;line-height:1.5;padding:0 12px;max-height:0;opacity:0;overflow:hidden;transition:max-height .28s ease,opacity .2s,padding .28s}
+.gitem.open{border-color:#F3B9A2;box-shadow:0 8px 22px -18px rgba(255,122,80,.9)}
+.gitem.open .gx{transform:rotate(45deg);color:var(--coral-d)}
+.gitem.open .gd{max-height:190px;opacity:1;padding:0 12px 12px}
+.gnone{font-size:13px;color:var(--muted);padding:14px 2px}
+
+/* ---------- quiz ---------- */
+.qz{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 2px 4px rgba(20,35,65,.05),0 20px 44px -28px rgba(20,35,65,.5)}
+.qhead{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,#FFF,#FAFBFD)}
+.qring{flex:0 0 46px}
+.qring svg{width:46px;height:46px;display:block}
+.qring .qa{transition:stroke-dashoffset .5s cubic-bezier(.3,.8,.3,1)}
+.qring text{font-family:var(--mono);font-size:12px;fill:var(--ink)}
+.qhead .qn{font-family:var(--disp);font-size:15px;font-weight:700;color:var(--ink);margin-right:auto}
+.qhead .qn small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:400;margin-top:2px}
+.qsc{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.qbody{padding:22px 20px}
+.qq{font-family:var(--disp);font-size:19px;font-weight:700;color:var(--ink);line-height:1.35;margin:0 0 4px;animation:capIn .4s both}
+.qtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--coral-d);margin:0 0 10px}
+.opts{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--soft);border:1.5px solid var(--line);border-radius:11px;padding:12px 14px;font-family:var(--sans);font-size:13.9px;color:var(--body);cursor:pointer;line-height:1.5;transition:all .18s cubic-bezier(.2,.7,.3,1);animation:capIn .35s both}
+.opt:hover:not(:disabled){border-color:var(--coral);background:var(--card);transform:translateX(3px)}
+.opt .ol{font-family:var(--mono);font-size:11.5px;color:var(--muted);flex:0 0 17px;padding-top:2px}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--green-t);border-color:var(--green);color:#0C6349}
+.opt.right .ol{color:var(--green)}
+.opt.wrong{background:var(--red-t);border-color:var(--red);color:#96291F}
+.opt.wrong .ol{color:var(--red)}
+.opt.fade{opacity:.4}
+.qfb{margin-top:16px;border-radius:12px;padding:14px 16px;font-size:13.7px;border:1px solid;display:none}
+.qfb.show{display:block;animation:capIn .4s both}
+.qfb.ok{background:var(--green-t);border-color:#BFE3D2;color:#0C6349}
+.qfb.no{background:var(--red-t);border-color:#F1CBC7;color:#96291F}
+.qfb .t{font-weight:600;display:block;margin-bottom:3px}
+.qfoot{padding:12px 18px;border-top:1px solid var(--line);background:var(--soft);display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.res{text-align:center;padding:26px 18px}
+.res .big{font-family:var(--disp);font-size:60px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-.03em}
+.res .sub{font-size:13.5px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+.res .msg{font-size:14.5px;margin-top:16px;max-width:540px;margin-left:auto;margin-right:auto}
+.spark{display:flex;gap:4px;justify-content:center;margin-top:20px}
+.spark i{width:15px;height:26px;border-radius:4px;display:block;background:var(--soft2);animation:pop .4s both}
+.spark i.k{background:var(--green)}
+.spark i.f{background:var(--red)}
+.revi{text-align:left;background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-top:9px;font-size:13.2px;animation:capIn .4s both}
+.revi .rq{font-weight:600;color:var(--ink);display:block;margin-bottom:4px}
+.revi .ra{color:var(--red);font-size:12.6px}
+.revi .rb{color:var(--green);font-size:12.6px}
+
+/* ---------- herramientas de aula ---------- */
+.iconrow{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;margin:14px 0}
+.iconcard{flex:1 1 190px;border:1px solid var(--line);border-radius:13px;background:var(--card);padding:14px;display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:start}
+.iconcard .ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--coral-t);font-size:21px}
+.iconcard b{display:block;color:var(--ink);font-family:var(--disp);font-size:14px;margin-bottom:2px}
+.iconcard span{font-size:12.5px;line-height:1.45;color:var(--body)}
+.code-map{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(240px,.65fr);gap:12px;margin-top:12px}
+.code-pane{position:relative;min-width:0}
+.code-map .term{margin:0;min-height:190px;padding-top:43px;overflow:auto}
+.copy-code{position:absolute;right:10px;top:9px;z-index:3;border:1px solid #31415C;background:#152239;color:#DCE6F4;border-radius:7px;padding:5px 10px;font-family:var(--mono);font-size:9.5px;cursor:pointer;transition:all .18s}
+.copy-code:hover{border-color:var(--coral);color:#fff}
+.copy-code.done{background:var(--green);border-color:var(--green);color:#fff}
+.repo-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;background:var(--ink);color:#fff;border-radius:9px;padding:9px 14px;font-family:var(--sans);font-size:13px;font-weight:600;margin:3px 0 15px;transition:all .18s}
+.repo-link:hover{background:var(--coral-d);transform:translateY(-1px)}
+.lab-note{background:var(--soft);border:1px solid var(--line);border-radius:13px;padding:14px 15px;display:flex;flex-direction:column;justify-content:center}
+.lab-note .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--coral-d);margin-bottom:7px}
+.lab-note b{font-family:var(--disp);font-size:14.5px;color:var(--ink);margin-bottom:5px}
+.lab-note p{font-size:12.8px;line-height:1.5;margin:0}
+.menu-btn{display:none}
+
+/* ---------- misc ---------- */
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:20px;padding:3px 10px;margin:0 5px 5px 0;border:1px solid}
+.pill.c{background:var(--coral-t);border-color:#F6C8B4;color:var(--coral-d)}
+.pill.b{background:var(--blue-t);border-color:#C7DAF1;color:var(--blue)}
+.pill.g{background:var(--green-t);border-color:#BFE3D2;color:var(--green)}
+.pill.v{background:var(--violet-t);border-color:#D6CBEE;color:var(--violet)}
+.ic{display:inline-block;vertical-align:-4px;flex-shrink:0}
+.eyebrow .ic{vertical-align:-3px;margin-right:1px}
+.cardm .ic-top{color:var(--coral-d);margin-bottom:8px}
+.call .t .ic{margin-right:5px}
+.iconcard .ico svg{width:20px;height:20px}
+@media(max-width:900px){
+  .stage{overflow-x:auto}
+  .stage svg{min-width:700px}
+  .stage:before{display:none}
+  .app{flex-direction:column;height:auto;overflow:visible}
+  .code-map{grid-template-columns:1fr}
+  .ggrid{grid-template-columns:1fr 1fr}
+  .rail{width:100%;flex:none;border-right:0;border-bottom:1px solid var(--line);max-height:82px;overflow:hidden;transition:max-height .3s ease}
+  body.menu-open .rail{max-height:82vh;overflow-y:auto}
+  .menu-btn{display:inline-flex}
+  .main{overflow:visible}
+  .wrap{padding:0 18px 100px}
+  .topbar{padding:10px 18px;flex-wrap:wrap}
+  .topbar .tt{order:3;flex-basis:100%}
+  .topbar .prog{order:4;flex:1 1 100%}
+  .class-chip{display:none}
+  .hero{padding:26px 22px 0;margin:16px 0 8px}
+  .hero h1{font-size:29px}
+  .hero .hsvg{margin:20px -22px 0}
+  .two,.fuse{grid-template-columns:1fr}
+  .gauges{grid-template-columns:repeat(2,1fr)}
+  .mx{grid-template-columns:1fr}
+  .mx .hd{display:none}
+  h2{font-size:24px}
+}
+@media(max-width:560px){.ggrid{grid-template-columns:1fr}.art.artifact-focus{inset:6px}.art.artifact-focus .abody{padding:16px 12px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+.tablewrap{overflow-x:auto;max-width:100%;margin:0 0 14px}.tablewrap table.t{margin:0;min-width:560px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <p class="k">Sesión interactiva · 3 horas</p>
+      <h1>AI Agent Architecture &amp; Multi-Agent Orchestration</h1>
+      <p>Módulo 4 · Sesión 1 · 18 bloques, 19 artefactos y cuestionario final</p>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+  <div class="main" id="main">
+    <div class="topbar">
+      <button class="btn menu-btn" id="menubtn" aria-label="Abrir temario">☰ Temario</button>
+      <span class="tt" id="crumb">Panorama</span>
+      <div class="prog"><i id="progbar"></i></div>
+      <button class="btn" id="gotoq">Ir al cuestionario</button>
+    </div>
+    <div class="wrap">
+
+    <div class="hero">
+      <p class="hk">AI Solution Architect · Módulo 4 · Sesión 1</p>
+      <h1>Un equipo de agentes que razona, actúa y sabe <em>cuándo frenar</em></h1>
+      <p class="hs">Del chatbot que responde al sistema que cotiza, matricula y deriva. Patrones, tools, memoria, coordinación y control humano, aterrizados en el asistente del instituto y en un equipo real que verás trabajar en Google ADK.</p>
+      <div class="hmeta"><span>19 artefactos interactivos</span><span>Cuestionario de 5 preguntas</span><span>3 laboratorios</span><span>Proyección por artefacto</span></div>
+      <div class="hsvg" id="hero-svg"></div>
+    </div>
+
+  <!-- ============ BLOQUE 0 · PANORAMA ============ -->
+  <section class="step" id="s0" data-group="Panorama" data-nav="Un asistente que actúa">
+    <p class="eyebrow rv">Bloque 0 · Panorama</p>
+    <h2 class="rv">De un chatbot que responde a un equipo que actúa</h2>
+    <p class="lead rv">El instituto ya tiene un RAG que responde preguntas sobre su catálogo. Pero los alumnos no solo preguntan: piden que les coticen, que los matriculen, que les devuelvan dinero. Un buscador con buena redacción no puede hacer nada de eso. Hoy diseñas lo que falta.</p>
+    <div class="cards rv">
+      <div class="cardm"><div class="n">Idea 1</div><div class="t">Un agente es un LLM que decide sus propios pasos</div><div class="d">En un workflow tu código fija el camino. En un agente, el modelo elige en cada vuelta qué tool usar y cuándo terminar. Esa libertad cuesta tokens, latencia y nuevas formas de fallar.</div></div>
+      <div class="cardm"><div class="n">Idea 2</div><div class="t">El LLM propone, tu código dispone</div><div class="d">El modelo nunca ejecuta nada. Devuelve un pedido en JSON y tu código decide si lo cumple. Permisos, reglas de negocio y validaciones viven en el código, no en el prompt.</div></div>
+      <div class="cardm"><div class="n">Idea 3</div><div class="t">Un buen agente se mide por cómo falla</div><div class="d">Lo que separa una demo de un producto es saber cuándo frenar: pedir aprobación, derivar a una persona y dejar una traza que explique cada decisión.</div></div>
+    </div>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 01</span><span class="an">Cuatro pedidos reales · qué capacidad exige cada uno</span></div>
+      <div class="abody">
+        <div class="stage"><span class="slabel" id="pa-phase"></span><div id="pa-stage"></div></div>
+        <div class="term" id="pa-llm"></div>
+        <div class="cap" id="pa-cap" style="margin-top:13px"></div>
+      </div>
+      <div class="actrl"><div class="dots" id="pa-dots"></div><span class="sc" id="pa-sc"></span><button class="abtn" id="pa-prev">Anterior</button><button class="abtn pri" id="pa-next">Siguiente</button></div>
+    </div>
+    <p class="rv">La sesión sigue el mismo hilo que una decisión de arquitectura: <b class="hl">cómo razona</b> el agente, <b class="hl">cómo actúa</b> sobre tus sistemas, <b class="hl">qué recuerda</b>, <b class="hl">cómo colabora</b> con otros agentes y <b class="hl">cuándo frena</b>. Al final lo construyes en tres laboratorios, y el tercero es un equipo de agentes real que puedes ver trabajar en la interfaz de Google ADK.</p>
+    <div class="call info rv"><span class="t">Cómo leer este material</span><p>Cada bloque tiene una explicación corta y un artefacto con el que puedes experimentar. Nada se mueve solo: tú avanzas con los botones. Al final hay un glosario y un cuestionario de 5 preguntas.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 1 · WORKFLOW O AGENTE ============ -->
+  <section class="step" id="s1" data-group="Cómo razona" data-nav="Workflow o agente">
+    <p class="eyebrow rv">Bloque 1 · Workflow vs Agent</p>
+    <h2 class="rv">La pregunta no es qué modelo usas, sino quién decide el siguiente paso</h2>
+    <p class="lead rv">Un RAG siempre hace lo mismo: busca y luego responde. Nunca decide otra ruta. Eso es un workflow, y no tiene nada de malo. Un agente aparece cuando el camino depende de lo que se va descubriendo.</p>
+    <p class="rv">En un <b class="hl">workflow</b> el desarrollador dibuja todos los pasos de antemano. Es predecible, barato y fácil de probar. En un <b class="hl">agente</b> el modelo recibe una lista de tools y un objetivo, y en cada vuelta elige qué hacer. Anthropic lo resume así en su guía de 2024: empieza por el workflow más simple que funcione y sube a un agente solo cuando tengas evidencia de que hace falta.</p>
+    <div class="two rv">
+      <div class="cardm"><div class="n">Usa un workflow si</div><div class="t">Puedes dibujar el flujo completo</div><div class="d">Los pasos se conocen antes, quieres el mismo resultado siempre y el costo debe ser bajo. Ejemplo: extraer datos de un voucher bancario y validarlos.</div></div>
+      <div class="cardm"><div class="n">Usa un agente si</div><div class="t">El camino depende de lo que descubre</div><div class="d">Usa varias tools, no siempre las mismas, y aceptas más costo a cambio de flexibilidad. Ejemplo: cotizar, comparar y matricular en una sola conversación.</div></div>
+    </div>
+    <div class="art rv" style="margin-top:16px">
+      <div class="ahead"><span class="at">Artefacto 02</span><span class="an">Mismo pedido, dos arquitecturas · quién decide</span></div>
+      <div class="abody">
+        <div class="tabs" id="wf-tabs"><button class="on" data-k="wf">Workflow</button><button data-k="ag">Agente</button></div>
+        <div class="stage"><span class="slabel" id="wf-mode"></span><div id="wf-stage"></div></div>
+        <div class="term" id="wf-llm"></div>
+        <div class="cap" id="wf-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call bad rv"><span class="t">El síntoma que verás en producción</span><p>Un equipo convierte en agente un proceso que siempre sigue los mismos tres pasos. La factura de tokens se triplica, las respuestas cambian entre una ejecución y otra y nadie puede escribir una prueba estable. Si el flujo se puede dibujar, dibújalo en código.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 2 · ANATOMÍA ============ -->
+  <section class="step" id="s2" data-group="Cómo razona" data-nav="Anatomía de un agente">
+    <p class="eyebrow rv">Bloque 2 · Agent Anatomy</p>
+    <h2 class="rv">Un LLM que decide, rodeado de piezas que tú diseñas</h2>
+    <p class="lead rv">El modelo es el centro, pero solo decide. Todo lo que lo vuelve útil o peligroso está alrededor: qué instrucciones recibe, qué tools puede usar, qué recuerda y cuántas vueltas puede dar antes de parar.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 03</span><span class="an">El ciclo del agente · una vuelta, pieza por pieza</span></div>
+      <div class="abody">
+        <div class="stage"><span class="slabel" id="an-phase"></span><div id="an-stage"></div></div>
+        <div class="cap" id="an-cap" style="margin-top:13px"></div>
+      </div>
+      <div class="actrl"><div class="dots" id="an-dots"></div><span class="sc" id="an-sc"></span><button class="abtn" id="an-prev">Anterior</button><button class="abtn pri" id="an-next">Siguiente</button></div>
+    </div>
+    <p class="rv">Cada pieza es una pregunta de diseño. <b>Instrucciones:</b> ¿qué rol tiene y qué nunca debe hacer? <b>Tools:</b> ¿qué acciones necesita y con qué permisos? <b>Memoria:</b> ¿qué debe recordar y por cuánto tiempo? <b>Loop:</b> ¿cuántas vueltas como máximo y cuándo para? No todos los casos necesitan todas las piezas, y por eso conviene pensar en un <b class="hl">espectro de autonomía</b>.</p>
+    <div class="tablewrap rv"><table class="t">
+      <tr><th>Escalón</th><th>Qué hace</th><th>Ejemplo en el instituto</th><th>Costo relativo</th></tr>
+      <tr><td><b>1 · LLM con prompt</b></td><td>Responde con lo que sabe</td><td>Redactar un correo de bienvenida</td><td>1x</td></tr>
+      <tr><td><b>2 · Workflow con tools</b></td><td>Pasos fijos que llaman tools</td><td>RAG del catálogo</td><td>1 a 2x</td></tr>
+      <tr><td><b>3 · Agente</b></td><td>Elige tools y cuándo parar</td><td>Cotizar con descuento y comparar programas</td><td>Cerca de 4x</td></tr>
+      <tr><td><b>4 · Multiagente</b></td><td>Varios agentes que se reparten el trabajo</td><td>Recepción, académico, matrícula y soporte</td><td>Cerca de 15x</td></tr>
+    </table></div>
+    <div class="call warn rv"><span class="t">El costo escondido</span><p>Según Anthropic (junio de 2025), un agente consume cerca de 4 veces más tokens que un chat y un sistema multiagente cerca de 15 veces. Cada escalón debe ganarse con evidencia de que el anterior no alcanza.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 3 · PATRONES ============ -->
+  <section class="step" id="s3" data-group="Cómo razona" data-nav="Cinco patrones">
+    <p class="eyebrow rv">Bloque 3 · Agent Patterns</p>
+    <h2 class="rv">Cinco formas de organizar las llamadas al modelo</h2>
+    <p class="lead rv">Un patrón de razonamiento es la receta que sigue el agente para usar el LLM: una sola pasada, un ciclo de pensar y actuar, un plan previo, una autocrítica o una búsqueda entre varios caminos. Cada uno resuelve un tipo de tarea y cada uno cobra distinto.</p>
+    <p class="rv"><b class="hl">Tool-Use-Only</b> elige la tool y responde sin escribir su razonamiento. <b class="hl">ReAct</b> (Reasoning + Acting, Yao et al. 2022) alterna pensamiento, acción y observación hasta tener la respuesta. <b class="hl">Plan-and-Execute</b> arma el plan completo con un modelo potente y lo ejecuta con uno barato. <b class="hl">Reflexion</b> (Shinn et al. 2023) evalúa su propio resultado y reintenta con una lección escrita. <b class="hl">LATS</b> (Language Agent Tree Search, Zhou et al. 2023) explora varios caminos como un árbol y se queda con el mejor.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 04</span><span class="an">Comparador de patrones · forma, costo y un ejemplo del instituto</span></div>
+      <div class="abody">
+        <div class="tabs" id="pt-tabs"><button class="on" data-k="tu">Tool-Use-Only</button><button data-k="re">ReAct</button><button data-k="pe">Plan-and-Execute</button><button data-k="rf">Reflexion</button><button data-k="la">LATS</button></div>
+        <div class="stage"><span class="slabel" id="pt-mode"></span><div id="pt-stage"></div></div>
+        <div class="gauges" id="pt-gg" style="margin-top:12px"></div>
+        <div class="term" id="pt-llm"></div>
+        <div class="cap" id="pt-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <p class="rv">No hace falta memorizar los cinco. Para elegir bastan dos preguntas: ¿conoces los pasos de antemano? y ¿la tarea es corta o larga? Reflexion y LATS no compiten con los otros: se suman encima cuando puedes medir la calidad o cuando equivocarse sale muy caro.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 05</span><span class="an">Matriz de decisión · qué patrón le alcanza a tu tarea</span></div>
+      <div class="abody">
+        <div class="mx">
+          <div class="hd"></div><div class="hd">Tarea corta</div><div class="hd">Tarea larga</div>
+          <div class="hd">Pasos conocidos</div>
+          <button class="cell" data-k="a"><b>Tool-Use-Only</b>«¿Cuánto dura Data Engineer?»</button>
+          <button class="cell" data-k="b"><b>Plan-and-Execute</b>«Arma mi ruta de 6 meses»</button>
+          <div class="hd">Pasos que se descubren</div>
+          <button class="cell" data-k="c"><b>ReAct</b>«Cotízame con mi descuento»</button>
+          <button class="cell" data-k="d"><b>Plan + replanner</b>«Migra mis 12 servicios»</button>
+        </div>
+        <div class="cap" id="mx-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call ok rv"><span class="t">Ruta sugerida</span><p>Empieza con ReAct, que es el patrón por defecto de casi todos los frameworks. Pasa a Plan-and-Execute si la tarea es larga y quieres que una persona vea el plan. Agrega Reflexion solo si tienes un criterio verificable. LATS rara vez se justifica en atención al cliente.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 4 · FUNCTION CALLING ============ -->
+  <section class="step" id="s4" data-group="Cómo actúa" data-nav="Function calling y Pydantic">
+    <p class="eyebrow rv">Bloque 4 · Function Calling · Schema Design · Pydantic</p>
+    <h2 class="rv">El modelo llena un formulario de pedido, tu código lo despacha</h2>
+    <p class="lead rv">Cuando un agente «usa una tool», el LLM no ejecuta nada. Devuelve un JSON con el nombre de la tool, los argumentos y un id. Tu aplicación lo lee, decide si lo cumple, ejecuta la función y le devuelve el resultado. Ahí, en tu código, está toda la seguridad.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 06</span><span class="an">Function calling de punta a punta · «¿Cuánto pago en 6 cuotas?»</span></div>
+      <div class="abody">
+        <div class="stage"><span class="slabel" id="fc-phase"></span><div id="fc-stage"></div></div>
+        <div class="term" id="fc-llm"></div>
+        <div class="cap" id="fc-cap" style="margin-top:13px"></div>
+      </div>
+      <div class="actrl"><div class="dots" id="fc-dots"></div><span class="sc" id="fc-sc"></span><button class="abtn" id="fc-prev">Anterior</button><button class="abtn pri" id="fc-next">Siguiente</button></div>
+    </div>
+    <p class="rv">El modelo solo ve tres cosas de cada tool: el nombre, la descripción y el schema de parámetros. Ese es todo su manual de uso, así que el <b class="hl">schema design</b> es diseño de prompt. La descripción debe decir qué hace y <i>cuándo</i> usarla. Un <code class="i">Literal["DA","DE","AIE"]</code> impide que invente un programa. Un <code class="i">Field(ge=1, le=12)</code> acota las cuotas.</p>
+    <div class="two rv">
+      <div class="cardm"><div class="n">Schema débil</div><div class="t"><code class="i">calcular(x)</code> · «Calcula.»</div><div class="d">El modelo no sabe cuándo usarla ni qué espera. Elige mal la tool o inventa argumentos. Lo mides en el Lab 1 cambiando la descripción.</div></div>
+      <div class="cardm"><div class="n">Schema fuerte</div><div class="t"><code class="i">cotizar(programa, cuotas, descuento)</code></div><div class="d">«Calcula el precio final de un programa. Úsala cuando el alumno pregunte cuánto pagará.» Tipos cerrados, rangos y una frase de cuándo usarla.</div></div>
+    </div>
+    <p class="rv">Y lo que el modelo devuelve también se valida. <b class="hl">Pydantic</b> convierte el JSON en un objeto tipado y rechaza lo que rompe tus reglas. Si falla, el mensaje de error vuelve al modelo para que corrija, con un máximo de dos reintentos. Ojo con la diferencia: <i>structured outputs</i> garantiza la forma del JSON, pero tus reglas de negocio solo las garantiza tu schema.</p>
+    <div class="call bad rv"><span class="t">El síntoma que verás en producción</span><p>El prompt dice «nunca registres sin confirmar» y un día el agente registra igual. El prompt es una sugerencia. Si una acción es peligrosa, no expongas la tool o valida en código antes de ejecutarla.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 5 · PARALELO Y ERRORES ============ -->
+  <section class="step" id="s5" data-group="Cómo actúa" data-nav="Paralelo y errores">
+    <p class="eyebrow rv">Bloque 5 · Parallel Tool Calls · Error Recovery</p>
+    <h2 class="rv">Pedir varias cosas a la vez y no caerse cuando una falla</h2>
+    <p class="lead rv">Un alumno pregunta por las vacantes de tres programas. Si el agente consulta uno, espera, consulta otro y espera de nuevo, tarda el triple. Y tarde o temprano una de esas consultas va a fallar.</p>
+    <p class="rv">Con <b class="hl">parallel tool calls</b> el modelo pide varias tools en una sola respuesta y tu código las ejecuta a la vez: el total tarda lo que la más lenta. Solo es seguro con lecturas independientes. En escrituras el orden importa y un reintento puede duplicar una acción. Para lo segundo existe el <b class="hl">error recovery</b>: clasificar el error y responder distinto a cada tipo, siempre con un tope de pasos.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 07</span><span class="an">Tres consultas de vacantes · secuencial, paralelo y con una falla</span></div>
+      <div class="abody">
+        <div class="tabs" id="pl-tabs"><button class="on" data-k="sec">Secuencial</button><button data-k="par">Paralelo</button><button data-k="err">Con error</button></div>
+        <div class="stage"><span class="slabel" id="pl-mode"></span><div id="pl-stage"></div></div>
+        <div class="term" id="pl-llm"></div>
+        <div class="cap" id="pl-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="tablewrap rv"><table class="t">
+      <tr><th>Tipo de error</th><th>Ejemplo</th><th>Respuesta</th></tr>
+      <tr><td><b>Transitorio</b></td><td>Timeout, 429 de rate limit</td><td>Reintentar con backoff: esperar 1, 2, 4 segundos</td></tr>
+      <tr><td><b>De argumentos</b></td><td>Pidió 24 cuotas, el máximo es 12</td><td>Devolver al modelo un mensaje que diga qué falló y cómo corregirlo</td></tr>
+      <tr><td><b>Permanente</b></td><td>El servicio de pagos está caído</td><td>Fallback: plan B o derivar a una persona</td></tr>
+    </table></div>
+    <div class="call warn rv"><span class="t">Siempre con tope</span><p>Un agente sin límite de pasos puede quedarse en bucle llamando la misma tool. En LangGraph es <code class="i">recursion_limit</code>, en un ciclo propio es un contador. Ponlo antes del primer despliegue, no después de la primera factura.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 6 · MCP ============ -->
+  <section class="step" id="s6" data-group="Cómo actúa" data-nav="MCP">
+    <p class="eyebrow rv">Bloque 6 · Model Context Protocol</p>
+    <h2 class="rv">Tools que viven en otro servidor y se conectan con un solo enchufe</h2>
+    <p class="lead rv">Si tres agentes necesitan hablar con cuatro sistemas, alguien escribe doce integraciones. Y cuando cambia la API de uno, se rompen tres. MCP propone otra cosa: cada sistema publica sus tools una vez y cualquier agente las usa.</p>
+    <p class="rv"><b class="hl">MCP</b> (Model Context Protocol) es un estándar abierto que Anthropic presentó en noviembre de 2024 y que hoy soportan OpenAI, Google, Microsoft y AWS. El sistema expone un <b class="hl">servidor MCP</b>, el agente actúa como <b>cliente MCP</b>, pregunta <code class="i">list_tools</code> y llama <code class="i">call_tool</code>. Para el modelo, una tool MCP es una tool más. Piensa en él como el USB de las tools.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 08</span><span class="an">Integraciones con y sin MCP · y por qué filtrar</span></div>
+      <div class="abody">
+        <div class="tabs" id="mc-tabs"><button class="on" data-k="sin">Sin MCP</button><button data-k="con">Con MCP</button><button data-k="fil">Filtrado del Lab 3</button></div>
+        <div class="stage"><span class="slabel" id="mc-mode"></span><div id="mc-stage"></div></div>
+        <div class="term" id="mc-llm"></div>
+        <div class="cap" id="mc-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call bad rv"><span class="t">El síntoma que verás en producción</span><p>Conectas un servidor MCP y el agente de pronto «sabe» borrar proyectos. El servidor de Neon expone unas 30 tools, entre ellas <code class="i">delete_project</code>. Un agente solo debe ver las que necesita: en ADK eso es <code class="i">tool_filter</code>, y conviene sumar el modo solo lectura.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 7 · MEMORIA ============ -->
+  <section class="step" id="s7" data-group="Qué recuerda" data-nav="Cuatro memorias">
+    <p class="eyebrow rv">Bloque 7 · Memory Systems</p>
+    <h2 class="rv">Cuatro preguntas distintas sobre el usuario, cuatro lugares distintos</h2>
+    <p class="lead rv">Ana escribe hoy y vuelve en una semana. Al volver espera que el asistente sepa que es exalumna, que ya cotizó Data Engineer y que tiene un ticket abierto. Ninguna de esas cosas cabe en el mismo lugar.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 09</span><span class="an">Los cuatro tipos de memoria · qué guardan y dónde viven</span></div>
+      <div class="abody">
+        <div class="tabs" id="me-tabs"><button class="on" data-k="st">Corto plazo</button><button data-k="lt">Largo plazo</button><button data-k="ep">Episódica</button><button data-k="se">Semántica</button></div>
+        <div class="stage"><span class="slabel" id="me-mode"></span><div id="me-stage"></div></div>
+        <div class="term" id="me-llm"></div>
+        <div class="cap" id="me-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <p class="rv">La de <b class="hl">corto plazo</b> tiene un problema propio: cada turno reenvía todo el historial al modelo. Sin gestión, el costo crece con cada mensaje. Las tres estrategias son recortar (simple, pero olvida datos clave), resumir lo antiguo y filtrar resultados pesados de tools. Mueve el control y mira la diferencia.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 10</span><span class="an">La ventana de contexto se llena · tokens por turno</span></div>
+      <div class="abody">
+        <label class="rv in" for="vt-r" style="display:block;font-size:13px;margin-bottom:8px">Turnos de conversación: <b id="vt-n">6</b></label>
+        <input type="range" id="vt-r" min="1" max="20" value="6" style="width:100%;accent-color:#FF7A50">
+        <div class="stage" style="margin-top:12px"><div id="vt-stage"></div></div>
+        <div class="cap" id="vt-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call warn rv"><span class="t">Memoria con permiso</span><p>Guarda hechos con fecha y origen, no conversaciones completas. No guardes datos sensibles sin consentimiento (Ley 29733 de protección de datos personales en Perú) y permite que el usuario corrija u olvide. La memoria también se equivoca.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 8 · COMUNICACIÓN ============ -->
+  <section class="step" id="s8" data-group="Colabora y frena" data-nav="Uno o varios agentes">
+    <p class="eyebrow rv">Bloque 8 · Multi-Agent Communication</p>
+    <h2 class="rv">Dividir en varios agentes cuesta: hazlo solo con una buena razón</h2>
+    <p class="lead rv">Un agente con veinte tools empieza a elegir mal. Uno que cotiza y también puede borrar matrículas es un riesgo. Esas son las señales para dividir. Si no aparecen, un solo agente es más barato y más fácil de depurar.</p>
+    <div class="iconrow rv">
+      <div class="iconcard"><div class="ico" id="ic-tools"></div><div><b>Demasiadas tools</b><span>Más de 10 a 15 parecidas y el modelo se confunde al elegir.</span></div></div>
+      <div class="iconcard"><div class="ico" id="ic-perm"></div><div><b>Permisos distintos</b><span>Quien analiza no debería poder escribir. Quien escribe necesita control.</span></div></div>
+      <div class="iconcard"><div class="ico" id="ic-par"></div><div><b>Trabajo en paralelo</b><span>Subtareas independientes que pueden correr a la vez.</span></div></div>
+    </div>
+    <p class="rv">Una vez divididos, los agentes tienen que pasarse información. Hay cuatro formas, y cuál elijas define qué tan fácil será entender después qué pasó.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 11</span><span class="an">Cuatro formas de comunicarse · quién ve qué</span></div>
+      <div class="abody">
+        <div class="tabs" id="co-tabs"><button class="on" data-k="mp">Message passing</button><button data-k="ss">Shared state</button><button data-k="hi">Hierarchical</button><button data-k="db">Debate</button></div>
+        <div class="stage"><span class="slabel" id="co-mode"></span><div id="co-stage"></div></div>
+        <div class="cap" id="co-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call ok rv"><span class="t">Regla práctica</span><p>Empieza con estado compartido. Agrega un supervisor cuando tengas más de dos especialistas. Reserva el debate para decisiones de alto impacto con una rúbrica clara para el juez: al menos triplica las llamadas.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 9 · DELEGACIÓN ============ -->
+  <section class="step" id="s9" data-group="Colabora y frena" data-nav="Delegación jerárquica">
+    <p class="eyebrow rv">Bloque 9 · Hierarchical Delegation</p>
+    <h2 class="rv">El supervisor no hace el trabajo: decide quién lo hace</h2>
+    <p class="lead rv">Es el grafo que construyes en el Lab 2. Cada pedido entra por el supervisor, que clasifica la intención y mide su confianza. Luego lo pasa al especialista que corresponde. Todos escriben en el mismo estado compartido.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 12</span><span class="an">El sistema del instituto · la ruta de cada pedido</span></div>
+      <div class="abody">
+        <div class="tabs" id="dg-tabs"><button class="on" data-k="ac">Duda académica</button><button data-k="co">Cotización</button><button data-k="ma">Matrícula</button><button data-k="re">Reembolso</button></div>
+        <div class="stage"><span class="slabel" id="dg-mode"></span><div id="dg-stage"></div></div>
+        <div class="term" id="dg-llm"></div>
+        <div class="cap" id="dg-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call info rv"><span class="t">Dos formas de delegar en Google ADK</span><p>En el Lab 3 verás las dos. Con <code class="i">sub_agents</code> el coordinador le <b>transfiere la conversación</b> a un especialista (<code class="i">transfer_to_agent</code>) y este sigue atendiendo. Con <code class="i">AgentTool</code> un agente <b>llama a otro como si fuera una función</b> y sigue al mando: el otro nunca habla con el usuario.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 10 · HITL ============ -->
+  <section class="step" id="s10" data-group="Colabora y frena" data-nav="Human-in-the-loop">
+    <p class="eyebrow rv">Bloque 10 · Human-in-the-Loop</p>
+    <h2 class="rv">Saber cuándo frenar es parte del diseño, no un parche</h2>
+    <p class="lead rv">En 2024 un tribunal obligó a Air Canada a cumplir una política de descuento que su chatbot había inventado. En 2025 un agente de código de Replit borró una base de datos de producción. En los dos casos faltaba lo mismo: un punto donde una persona decide.</p>
+    <p class="rv"><b class="hl">HITL</b> (human-in-the-loop) tiene tres momentos. El <b class="hl">approval gate</b> frena antes de algo irreversible: pagar, registrar, borrar. El <b class="hl">umbral de confianza</b> frena cuando el agente no entendió bien. La <b class="hl">escalación</b> deriva cuando el pedido no le corresponde, como un reembolso con un caso especial.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 13</span><span class="an">Approval gate · pausar, guardar, decidir, reanudar</span></div>
+      <div class="abody">
+        <div class="stage"><span class="slabel" id="ag-phase"></span><div id="ag-stage"></div></div>
+        <div class="term" id="ag-llm"></div>
+        <div class="cap" id="ag-cap" style="margin-top:13px"></div>
+      </div>
+      <div class="actrl"><div class="dots" id="ag-dots"></div><span class="sc" id="ag-sc"></span><button class="abtn" id="ag-prev">Anterior</button><button class="abtn pri" id="ag-next">Siguiente</button></div>
+    </div>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 14</span><span class="an">Umbral de confianza · responder, preguntar o derivar</span></div>
+      <div class="abody">
+        <label for="uc-r" style="display:block;font-size:13px;margin-bottom:8px">Confianza del supervisor en la intención: <b id="uc-n">0.72</b></label>
+        <input type="range" id="uc-r" min="0" max="100" value="72" style="width:100%;accent-color:#FF7A50">
+        <div class="stage" style="margin-top:12px"><div id="uc-stage"></div></div>
+        <div class="cap" id="uc-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call bad rv"><span class="t">El síntoma que verás en producción</span><p>Al reanudar después de la aprobación, el agente vuelve a llamar al LLM y la cotización cambia. En LangGraph el nodo con <code class="i">interrupt()</code> se ejecuta otra vez desde el inicio: déjalo en un nodo propio, sin llamadas al modelo. Y nunca uses solo la confianza que declara el LLM: no está calibrada.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 11 · OBSERVABILIDAD ============ -->
+  <section class="step" id="s11" data-group="Colabora y frena" data-nav="Observabilidad">
+    <p class="eyebrow rv">Bloque 11 · Observability · Tracing</p>
+    <h2 class="rv">Si no puedes explicar por qué hizo algo, no está listo</h2>
+    <p class="lead rv">Un alumno reclama que el asistente le prometió un descuento. ¿Es cierto? Sin un registro de cada paso, es su palabra contra la del bot. Con una traza, lo verificas en un minuto.</p>
+    <p class="rv">Una <b class="hl">traza</b> es el registro de cada paso de un pedido: quién decidió, qué tool usó con qué argumentos, cuánto tardó y cuántos tokens gastó. En el Lab 2 construyes tu propio visor. En el Lab 3 la ves en <b class="hl">adk web</b>, la interfaz de desarrollo de Google ADK, y en la terminal gracias a los <b class="hl">callbacks</b>. Este artefacto recorre una traza real del equipo de Pan.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 15</span><span class="an">Traza de «¿Qué vendedor vendió más?» · evento por evento</span></div>
+      <div class="abody">
+        <div class="stage"><span class="slabel" id="tr-phase"></span><div id="tr-stage"></div></div>
+        <div class="term" id="tr-llm"></div>
+        <div class="cap" id="tr-cap" style="margin-top:13px"></div>
+      </div>
+      <div class="actrl"><div class="dots" id="tr-dots"></div><span class="sc" id="tr-sc"></span><button class="abtn" id="tr-prev">Anterior</button><button class="abtn pri" id="tr-next">Siguiente</button></div>
+    </div>
+    <div class="call info rv"><span class="t">Herramientas</span><p>LangSmith (LangChain), Langfuse (open source), Cloud Trace (Google), AgentCore Observability sobre CloudWatch (AWS) y OpenTelemetry como estándar abierto que todos pueden exportar.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 12 · FRAMEWORKS ============ -->
+  <section class="step" id="s12" data-group="Colabora y frena" data-nav="Frameworks">
+    <p class="eyebrow rv">Bloque 12 · Agent Frameworks 2026</p>
+    <h2 class="rv">Todos resuelven lo mismo, cambian el estilo y la nube</h2>
+    <p class="lead rv">Tools, memoria, delegación y control humano: todos los frameworks ofrecen esas cuatro piezas. Lo que cambia es cómo te obligan a pensar el sistema y en qué nube se sienten en casa. Los frameworks cambian cada año. Los patrones de esta sesión no.</p>
+    <div class="tablewrap rv"><table class="t">
+      <tr><th>Framework</th><th>Modelo mental</th><th>Cómo se observa</th><th>Estado en 2026</th></tr>
+      <tr><td><b>LangGraph</b></td><td>Grafo de estados con ciclos, cada arista es código</td><td>LangSmith, Langfuse, callbacks</td><td>Activo, 1.x. Motor de <code class="i">create_agent</code></td></tr>
+      <tr><td><b>Google ADK</b></td><td>Agentes con <code class="i">sub_agents</code>, workflows en grafo desde 2.0</td><td>Eventos, plugins, adk web, Cloud Trace</td><td>2.0 GA en Python el 19 de mayo de 2026</td></tr>
+      <tr><td><b>Microsoft Agent Framework</b></td><td>Agentes y workflows sobre .NET o Python</td><td>OpenTelemetry, Azure AI Foundry</td><td>1.0 en abril de 2026. Sucesor de AutoGen y Semantic Kernel</td></tr>
+      <tr><td><b>AWS Strands + AgentCore</b></td><td>Agents-as-tools, swarm, graph y workflow</td><td>AgentCore Observability en CloudWatch</td><td>Strands es el SDK abierto. AgentCore es la plataforma gestionada</td></tr>
+      <tr><td><b>OpenAI Agents SDK</b></td><td>Handoffs entre agentes y guardrails</td><td>Tracing incluido</td><td>Sucesor de Swarm, que quedó deprecado</td></tr>
+      <tr><td><b>CrewAI</b></td><td>Equipo con roles, metas y tareas</td><td>Integraciones de tracing</td><td>Activo. Sumó Flows para control paso a paso</td></tr>
+    </table></div>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 16</span><span class="an">¿Qué framework elijo? · según tu contexto</span></div>
+      <div class="abody">
+        <div class="mx" id="fw-mx">
+          <div class="hd"></div><div class="hd">Necesitas control fino</div><div class="hd">Necesitas ir rápido</div>
+          <div class="hd">Cualquier nube</div>
+          <button class="cell" data-k="lg"><b>LangGraph</b>Grafo explícito, pausas y persistencia</button>
+          <button class="cell" data-k="cr"><b>CrewAI u OpenAI Agents SDK</b>Roles o handoffs en pocas líneas</button>
+          <div class="hd">Comprometido con una nube</div>
+          <button class="cell" data-k="ms"><b>Microsoft Agent Framework</b>Azure y .NET con workflows tipados</button>
+          <button class="cell" data-k="gk"><b>Google ADK o AWS Strands</b>Delegación por descripción y su consola</button>
+        </div>
+        <div class="cap" id="fw-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call ok rv"><span class="t">LangGraph o ADK, la diferencia de fondo</span><p>En LangGraph la ruta la decide tu código: es predecible y auditable, ideal para procesos regulados. En ADK la decide el coordinador leyendo las descripciones de sus especialistas: más rápido de armar, menos predecible. Lo comparas tú mismo entre el Lab 2 y el Lab 3.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 13 · LABS 1 Y 2 ============ -->
+  <section class="step" id="s13" data-group="Laboratorios" data-nav="Lab 1 y Lab 2">
+    <p class="eyebrow rv">Bloque 13 · Labs 1 y 2 · LangChain y LangGraph</p>
+    <h2 class="rv">Primero el ciclo desnudo, después el sistema completo</h2>
+    <p class="lead rv">Los dos primeros labs corren en Colab y solo necesitan tu <code class="i">OPENAI_API_KEY</code>. El Lab 1 te muestra que un agente es un LLM dentro de un ciclo. El Lab 2 es el entregable: el sistema multiagente del instituto en LangGraph, con reglas en código, aprobación humana y un visor de trazas.</p>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 17</span><span class="an">Qué haces y qué observas en cada lab</span></div>
+      <div class="abody">
+        <div class="tabs" id="lb-tabs"><button class="on" data-k="l1">Lab 1 · ReAct</button><button data-k="l2">Lab 2 · LangGraph</button></div>
+        <div class="code-map"><div class="code-pane"><div class="term" id="lb-llm" style="padding-top:13px"></div></div><div class="lab-note" id="lb-note"></div></div>
+        <div class="cap" id="lb-cap" style="margin-top:13px"></div>
+      </div>
+    </div>
+    <div class="call info rv"><span class="t">Los alumnos de prueba del instituto</span><p>Ana (45781236) es exalumna. Luis (70213458) tiene una deuda de 350 soles. María (46329871) tiene Python básico. Jorge (72540019) viene por convenio con Andina Retail. Carla (41120987) ya está matriculada en DE. Cada uno activa una regla distinta del código.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 14 · LAB 3 POR DENTRO ============ -->
+  <section class="step" id="s14" data-group="Laboratorios" data-nav="Lab 3 · el equipo de Pan">
+    <p class="eyebrow rv">Bloque 14 · Lab 3 · Google ADK + MCP</p>
+    <h2 class="rv">Un equipo de agentes que puedes ver trabajar</h2>
+    <p class="lead rv">El Lab 3 es un proyecto real que corres en tu computadora: la carpeta <code class="i">agente_mcp_adk</code> del repositorio del curso. Es el asistente de la academia y de su tienda de tecnología, armado como un equipo. En <b>adk web</b> ves quién decide, a quién delega, qué tools usa y dónde frena para pedirte aprobación.</p>
+    <a class="repo-link" href="https://github.com/joelespinozaro/modulo4-sesion1-lab/tree/main/agente_mcp_adk" target="_blank" rel="noopener">↗ Repositorio · agente_mcp_adk</a>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 18</span><span class="an">El equipo de Pan · agente por agente</span></div>
+      <div class="abody">
+        <div class="stage"><span class="slabel" id="pn-phase"></span><div id="pn-stage"></div></div>
+        <div class="term" id="pn-llm"></div>
+        <div class="cap" id="pn-cap" style="margin-top:13px"></div>
+      </div>
+      <div class="actrl"><div class="dots" id="pn-dots"></div><span class="sc" id="pn-sc"></span><button class="abtn" id="pn-prev">Anterior</button><button class="abtn pri" id="pn-next">Siguiente</button></div>
+    </div>
+    <div class="tablewrap rv"><table class="t">
+      <tr><th>Agente</th><th>Patrón de la sesión</th><th>Qué ves en adk web</th></tr>
+      <tr><td><b>Pan</b></td><td>Delegación jerárquica</td><td>Evento <code class="i">transfer_to_agent</code> con el especialista elegido</td></tr>
+      <tr><td><b>asesor_academico</b></td><td>RAG como tool</td><td><code class="i">retrieve_context</code> y los fragmentos que devolvió</td></tr>
+      <tr><td><b>analista_ventas</b></td><td>MCP con mínimo privilegio</td><td><code class="i">get_database_tables</code>, <code class="i">describe_table_schema</code>, <code class="i">run_sql</code></td></tr>
+      <tr><td><b>revisor_cifras</b></td><td>Agente como tool, Reflexion en pequeño</td><td>Llamada con el borrador y su veredicto JSON</td></tr>
+      <tr><td><b>operaciones</b></td><td>Approval gate y umbral de riesgo</td><td>Una tarjeta de confirmación con el total del pedido</td></tr>
+    </table></div>
+    <div class="call ok rv"><span class="t">Leer por MCP, escribir por tools propias</span><p>El MCP de Neon está en solo lectura y filtrado a 4 tools. Las escrituras pasan por <code class="i">operaciones</code>, con reglas de negocio en código (el cliente existe, hay stock, máximo 20 unidades), aprobación humana y auditoría en la tabla <code class="i">acciones_agente</code>. Así quien analiza no puede escribir y quien escribe no puede correr SQL libre.</p></div>
+  </section>
+
+  <!-- ============ BLOQUE 15 · LAB 3 PASO A PASO ============ -->
+  <section class="step" id="s15" data-group="Laboratorios" data-nav="Lab 3 · paso a paso">
+    <p class="eyebrow rv">Bloque 15 · Lab 3 · Paso a paso</p>
+    <h2 class="rv">Del clon del repositorio a aprobar tu primer pedido</h2>
+    <p class="lead rv">Necesitas Python 3.11 o superior y una API key de OpenAI. Para la experiencia completa, una cuenta gratis de Neon y una de Qdrant Cloud. Si una pieza falta, ese especialista trabaja sin ella y el resto del equipo sigue funcionando.</p>
+    <div class="iconrow rv">
+      <label class="iconcard" for="v-model"><span class="ico" id="ic-v1"></span><span><b>OPENAI_MODEL</b><input class="gsearch" id="v-model" value="gpt-4o-mini" style="margin:4px 0 0;width:100%"></span></label>
+      <label class="iconcard" for="v-coleccion"><span class="ico" id="ic-v2"></span><span><b>QDRANT_COLLECTION_NAME</b><input class="gsearch" id="v-coleccion" value="documents" style="margin:4px 0 0;width:100%"></span></label>
+      <label class="iconcard" for="v-puerto"><span class="ico" id="ic-v3"></span><span><b>Puerto de adk web</b><input class="gsearch" id="v-puerto" value="8000" style="margin:4px 0 0;width:100%"></span></label>
+    </div>
+    <div class="art rv">
+      <div class="ahead"><span class="at">Artefacto 19</span><span class="an">Laboratorio guiado · comandos y qué está pasando</span></div>
+      <div class="abody">
+        <div class="tabs" id="os-tabs"><button class="on" data-k="unix">Linux / macOS</button><button data-k="win">Windows</button></div>
+        <div class="code-map">
+          <div class="code-pane"><button class="copy-code" data-copy="lab-code">Copiar</button><div class="term" id="lab-code"></div></div>
+          <div class="lab-note" id="lab-note"></div>
+        </div>
+        <div class="cap" id="lab-cap" style="margin-top:13px"></div>
+      </div>
+      <div class="actrl"><div class="dots" id="lab-dots"></div><span class="sc" id="lab-sc"></span><button class="abtn" id="lab-prev">Anterior</button><button class="abtn pri" id="lab-next">Siguiente</button></div>
+    </div>
+    <div class="tablewrap rv"><table class="t">
+      <tr><th>Escribe en adk web</th><th>Qué debe pasar</th></tr>
+      <tr><td>«¿Qué cursos tiene el programa de Data Engineer?»</td><td>Pan transfiere a <code class="i">asesor_academico</code>, que usa <code class="i">retrieve_context</code></td></tr>
+      <tr><td>«¿Qué vendedor vendió más en total?»</td><td>Pan transfiere a <code class="i">analista_ventas</code>: tablas, esquema, <code class="i">run_sql</code> y <code class="i">revisor_cifras</code></td></tr>
+      <tr><td>«¿Y cuál fue su producto más vendido?»</td><td>Responde el analista sin pasar por Pan: el especialista conserva la conversación</td></tr>
+      <tr><td>«Borra la tabla de productos»</td><td>El guardrail <code class="i">before_tool</code> bloquea el SQL</td></tr>
+      <tr><td>«Registra 2 laptops para la clienta con DNI 71234501, vendedor 80001001»</td><td><code class="i">operaciones</code> valida y se detiene con el total. Tú apruebas o rechazas</td></tr>
+      <tr><td>«Registra 30 monitores para el mismo cliente»</td><td>El código lo rechaza antes de pedir aprobación: el máximo es 20</td></tr>
+      <tr><td>«Llegaron 5 hubs USB-C» y luego «llegaron 50»</td><td>5 se aplica solo, 50 pide aprobación (umbral de 10)</td></tr>
+    </table></div>
+    <div class="call bad rv"><span class="t">El síntoma que verás en clase</span><p>El analista responde «no tengo acceso a la base de datos». No es el prompt: el MCP no conectó y ADK siguió sin esas tools, en silencio. Corre <code class="i">verificar_conexiones.py</code> y revisa <code class="i">NEON_API_KEY</code>. Si <code class="i">adk web</code> no muestra el agente, lo estás corriendo desde dentro de la carpeta: córrelo desde la raíz del repositorio.</p></div>
+    <div class="call info rv"><span class="t">Entregable</span><p>Lab 2 con la evaluación en 8 de 8 y una matrícula aprobada en la base. Lab 3 con un pedido aprobado y otro rechazado visibles en <code class="i">acciones_agente</code>. Para subir nota: una captura de Events con <code class="i">transfer_to_agent</code> y las tools MCP, y un reto a elección.</p></div>
+  </section>
+
+  <!-- ============ GLOSARIO ============ -->
+  <section class="step" id="s-glos" data-group="Cierre" data-nav="Glosario">
+    <p class="eyebrow rv">Bloque 16 · Referencia</p>
+    <h2 class="rv">Glosario de la sesión</h2>
+    <p class="rv">Escribe para filtrar. Sirve para repasar antes del cuestionario y para consultar durante el laboratorio.</p>
+    <input class="gsearch rv" id="gs" type="text" placeholder="Buscar un término, por ejemplo: ReAct, MCP, interrupt">
+    <div class="art rv"><div class="abody ggrid" id="glist"></div></div>
+  </section>
+
+  <!-- ============ CUESTIONARIO ============ -->
+  <section class="step" id="s-quiz" data-group="Cierre" data-nav="Cuestionario final">
+    <p class="eyebrow rv">Bloque 17 · Evaluación</p>
+    <h2 class="rv">Cuestionario final</h2>
+    <p class="lead rv">5 preguntas sobre los temas centrales de la sesión. Cada respuesta se explica al momento, así que sirve tanto para medirte como para repasar. No hay nota ni envío, y puedes repetirlo las veces que quieras.</p>
+    <div class="qz rv">
+      <div class="qhead"><div class="qring" id="q-ring"></div><div class="qn" id="q-num">Pregunta 1<small>de 5</small></div><span class="qsc" id="q-score">0 correctas</span></div>
+      <div class="qbody" id="q-body"></div>
+      <div class="qfoot" id="q-foot"></div>
+    </div>
+    <div class="call info rv" style="margin-top:18px"><span class="t">Para llevarte a casa</span><p>Empieza con lo más simple que funcione: un workflow antes que un agente, un agente antes que un equipo. Sube de complejidad solo con evidencia. Y en cada escalón, decide primero dónde frena y quién lo aprueba.</p></div>
+  </section>
+
+    <p style="margin:40px 0 10px;font-size:12.5px;color:var(--muted)">Joel Espinoza Rojas · Datapath · AI Solution Architect · linkedin.com/in/joelespinozaro</p>
+    </div>
+  </div>
+</div>
+<script>
+/* ============ utilidades ============ */
+const $=id=>document.getElementById(id);
+function cap(id,t,d){const e=$(id);e.innerHTML='<span class="ct">'+t+'</span>'+d;e.classList.remove("anim");void e.offsetWidth;e.classList.add("anim");}
+function term(id,html){const e=$(id);e.innerHTML=html;e.classList.remove("anim");void e.offsetWidth;e.classList.add("anim");}
+function svg(vb,inner,extra){return '<svg viewBox="'+vb+'" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans,system-ui,sans-serif">'+(extra||"")+inner+'</svg>';}
+const SVGCSS='<style>'+
+ '.nd rect{transition:fill .45s,stroke .45s,filter .45s}'+
+ '.nd .t1{font-size:14px;font-weight:600;fill:#E6EDF7}'+
+ '.nd .t2{font-family:IBM Plex Mono,monospace;font-size:9.5px;letter-spacing:.1em;fill:#5B6E8F}'+
+ '.nd.off .t1{fill:#7C8CA8}.nd.on .t1{fill:#fff}'+
+ '.ln{transition:stroke .45s,opacity .45s}'+
+ '.fl{stroke-dasharray:5 8;animation:fl 1.4s linear infinite}@keyframes fl{to{stroke-dashoffset:-26}}'+
+ '.dw{stroke-dasharray:600;stroke-dashoffset:600;animation:dw .85s cubic-bezier(.3,.7,.3,1) forwards}@keyframes dw{to{stroke-dashoffset:0}}'+
+ '.pp{animation:pp .5s cubic-bezier(.2,1.5,.4,1) both}@keyframes pp{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}'+
+ '.pt{transition:transform .75s cubic-bezier(.2,.7,.3,1),opacity .5s}'+
+ '.gl{filter:drop-shadow(0 0 9px rgba(255,122,80,.85))}'+
+ '.bl{animation:bl 1.9s ease-in-out infinite}@keyframes bl{0%,100%{opacity:.75}50%{opacity:1}}'+
+ 'text{font-family:IBM Plex Sans,system-ui,sans-serif}'+
+ '</style>';
+function node(x,y,w,h,t1,t2,state,iconName){
+  const on=state==="on",past=state==="past";
+  const fill=on?"#2A1A16":(past?"#132038":"#0F1A2C");
+  const st=on?"#FF7A50":(past?"#2E4467":"#22314C");
+  const icCol=on?"#FF7A50":(past?"#5B6E8F":"#3C4C6B");
+  let ic="";
+  if(iconName){
+    ic=iconName.indexOf("brand:")===0?brandIconSvg(iconName.slice(6),x+w-30,y+12,18,icCol):iconSvg(iconName,x+w-30,y+12,18,icCol);
+  }
+  return '<g class="nd '+(state||"off")+'"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="12" fill="'+fill+'" stroke="'+st+'" stroke-width="'+(on?2.2:1.4)+'"'+(on?' class="gl"':'')+'/>'+
+  '<text class="t2" x="'+(x+15)+'" y="'+(y+22)+'">'+t2+'</text>'+
+  '<text class="t1" x="'+(x+15)+'" y="'+(y+44)+'">'+t1+'</text>'+ic+'</g>';
+}
+function link(x1,y1,x2,y2,on,dash){
+  return '<line class="ln'+(on?" fl":"")+'" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+(on?"#FF7A50":"#26364F")+'" stroke-width="'+(on?2.4:1.6)+'"'+(dash&&!on?' stroke-dasharray="4 6"':'')+'/>';
+}
+function arrow(x,y,on){return '<polygon points="'+(x-8)+','+(y-5)+' '+x+','+y+' '+(x-8)+','+(y+5)+'" fill="'+(on?"#FF7A50":"#26364F")+'"/>';}
+
+/* ============ iconos (Lucide, ISC License · lucide.dev) ============ */
+const ICONS={
+  "alert-triangle":'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" />',
+  "bar-chart-3":'<path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M7 16h8" /><path d="M7 11h12" /><path d="M7 6h3" />',
+  "bot":'<path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" />',
+  "brain":'<path d="M12 18V5" /><path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4" /><path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5" /><path d="M17.997 5.125a4 4 0 0 1 2.526 5.77" /><path d="M18 18a4 4 0 0 0 2-7.464" /><path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517" /><path d="M6 18a4 4 0 0 1-2-7.464" /><path d="M6.003 5.125a4 4 0 0 0-2.526 5.77" />',
+  "check":'<path d="M20 6 9 17l-5-5" />',
+  "clock":'<circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />',
+  "cloud":'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />',
+  "code":'<path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" />',
+  "cpu":'<path d="M12 20v2" /><path d="M12 2v2" /><path d="M17 20v2" /><path d="M17 2v2" /><path d="M2 12h2" /><path d="M2 17h2" /><path d="M2 7h2" /><path d="M20 12h2" /><path d="M20 17h2" /><path d="M20 7h2" /><path d="M7 20v2" /><path d="M7 2v2" /><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="8" y="8" width="8" height="8" rx="1" />',
+  "database":'<ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" />',
+  "eye":'<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" />',
+  "file-text":'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />',
+  "filter":'<path d="M2 5h20" /><path d="M6 12h12" /><path d="M9 19h6" />',
+  "folder":'<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />',
+  "gauge":'<path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" />',
+  "git-branch":'<path d="M15 6a9 9 0 0 0-9 9V3" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" />',
+  "git-merge":'<circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" />',
+  "globe":'<circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" />',
+  "key":'<path d="m2 21 9.6-9.6" /><path d="m7.5 15.5 2.3 2.3a1 1 0 0 1 0 1.4l-2.1 2.1a1 1 0 0 1-1.4 0L4 19" /><circle cx="15.5" cy="7.5" r="5.5" />',
+  "layers":'<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />',
+  "list-checks":'<path d="M13 5h8" /><path d="M13 12h8" /><path d="M13 19h8" /><path d="m3 17 2 2 4-4" /><path d="m3 7 2 2 4-4" />',
+  "lock":'<rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />',
+  "message-square":'<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />',
+  "network":'<rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" />',
+  "plug":'<path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" />',
+  "refresh-cw":'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" />',
+  "route":'<circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" />',
+  "search":'<path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" />',
+  "send":'<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" /><path d="m21.854 2.147-10.94 10.939" />',
+  "server":'<rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" />',
+  "settings":'<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" />',
+  "shield":'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />',
+  "shield-check":'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" />',
+  "terminal":'<path d="M12 19h8" /><path d="m4 17 6-6-6-6" />',
+  "unlock":'<rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />',
+  "user":'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />',
+  "users":'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M16 3.128a4 4 0 0 1 0 7.744" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><circle cx="9" cy="7" r="4" />',
+  "webhook":'<path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2" /><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06" /><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8" />',
+  "workflow":'<rect width="8" height="8" x="3" y="3" rx="2" /><path d="M7 11v4a2 2 0 0 0 2 2h4" /><rect width="8" height="8" x="13" y="13" rx="2" />',
+  "x":'<path d="M18 6 6 18" /><path d="m6 6 12 12" />',
+  "zap":'<path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" />'
+};
+function icon(name,size,color){
+  const d=ICONS[name]||(typeof ICONS_IT!=="undefined"&&ICONS_IT[name]);
+  if(!d)return "";
+  size=size||18;
+  return '<svg class="ic" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+(color||"currentColor")+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+}
+function iconSvg(name,x,y,size,color){
+  const d=ICONS[name]||(typeof ICONS_IT!=="undefined"&&ICONS_IT[name]);
+  if(!d)return "";
+  size=size||18;
+  return '<svg x="'+x+'" y="'+y+'" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+(color||"#E6EDF7")+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+}
+
+
+/* ============ navegación ============ */
+const secs=[...document.querySelectorAll("section.step")];
+const nav=$("nav");
+let lastGroup="",navHTML="";
+secs.forEach((s,i)=>{
+  if(s.dataset.group!==lastGroup){lastGroup=s.dataset.group;navHTML+='<div class="ng">'+lastGroup+'</div>';}
+  navHTML+='<button class="ni" data-t="'+s.id+'"><span class="n">'+String(i).padStart(2,"0")+'</span><span>'+s.dataset.nav+'</span><span class="dn"></span></button>';
+});
+nav.innerHTML=navHTML;
+const items=[...nav.querySelectorAll(".ni")];
+items.forEach(b=>b.addEventListener("click",()=>{$(b.dataset.t).scrollIntoView({behavior:"smooth",block:"start"});document.body.classList.remove("menu-open");}));
+const main=$("main"),crumb=$("crumb"),progbar=$("progbar");
+if(typeof IntersectionObserver!=="undefined"){
+  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){
+    items.forEach(b=>b.classList.toggle("on",b.dataset.t===e.target.id));
+    const idx=secs.findIndex(s=>s.id===e.target.id);
+    crumb.textContent=e.target.dataset.group+" · "+e.target.dataset.nav;
+    progbar.style.width=Math.round(((idx+1)/secs.length)*100)+"%";
+  }});},{rootMargin:"-14% 0px -70% 0px",threshold:0});
+  secs.forEach(s=>io.observe(s));
+  const rio=new IntersectionObserver(es=>{es.forEach((e,k)=>{if(e.isIntersecting){
+    e.target.style.transitionDelay=(Math.min(k,4)*60)+"ms";e.target.classList.add("in");rio.unobserve(e.target);
+  }});},{rootMargin:"0px 0px -8% 0px",threshold:.08});
+  document.querySelectorAll(".rv").forEach(e=>rio.observe(e));
+  setTimeout(()=>{if(!document.querySelector(".rv.in"))document.querySelectorAll(".rv").forEach(e=>e.classList.add("in"));},2200);
+}else document.querySelectorAll(".rv").forEach(e=>e.classList.add("in"));
+$("gotoq").addEventListener("click",()=>$("s-quiz").scrollIntoView({behavior:"smooth",block:"start"}));
+$("menubtn").addEventListener("click",()=>document.body.classList.toggle("menu-open"));
+
+/* ============ proyección individual por artefacto ============ */
+const artifactBackdrop=document.createElement("div");
+artifactBackdrop.className="artifact-backdrop";
+document.body.appendChild(artifactBackdrop);
+let focusedArtifact=null,focusScroll=0;
+function closeArtifact(){
+  if(!focusedArtifact)return;
+  focusedArtifact.classList.remove("artifact-focus");
+  const btn=focusedArtifact.querySelector(".project-btn");
+  if(btn){btn.innerHTML="<span>⛶</span> Proyectar";btn.setAttribute("aria-pressed","false");}
+  focusedArtifact=null;
+  document.body.classList.remove("artifact-open");
+  window.scrollTo(0,focusScroll);
+}
+document.querySelectorAll(".art").forEach(art=>{
+  const head=art.querySelector(":scope > .ahead");
+  if(!head)return;
+  const label=head.querySelector(".at")?.textContent||"artefacto";
+  const btn=document.createElement("button");
+  btn.className="project-btn";btn.type="button";btn.setAttribute("aria-label","Proyectar "+label);btn.setAttribute("aria-pressed","false");
+  btn.innerHTML="<span>⛶</span> Proyectar";
+  btn.addEventListener("click",()=>{
+    if(focusedArtifact===art){closeArtifact();return;}
+    closeArtifact();focusScroll=window.scrollY;focusedArtifact=art;
+    document.body.classList.add("artifact-open");art.classList.add("artifact-focus");
+    btn.innerHTML="<span>×</span> Cerrar";btn.setAttribute("aria-pressed","true");art.scrollTop=0;
+  });
+  head.appendChild(btn);
+});
+artifactBackdrop.addEventListener("click",closeArtifact);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeArtifact();});
+
+/* ============ stepper ============ */
+function stepper(pre,n,draw){
+  let i=0;
+  const dots=$(pre+"-dots"),sc=$(pre+"-sc"),prev=$(pre+"-prev"),next=$(pre+"-next");
+  dots.innerHTML=Array.from({length:n},(_,k)=>'<i data-k="'+k+'"></i>').join("");
+  dots.querySelectorAll("i").forEach(d=>d.addEventListener("click",()=>{i=+d.dataset.k;paint();}));
+  function paint(){
+    dots.querySelectorAll("i").forEach((d,k)=>{d.className=k===i?"on":(k<i?"done":"");});
+    sc.textContent=(i+1)+" / "+n;
+    prev.disabled=i===0;next.disabled=i===n-1;
+    next.textContent=i===n-1?"Fin":"Siguiente";
+    draw(i);
+  }
+  prev.addEventListener("click",()=>{if(i>0){i--;paint();}});
+  next.addEventListener("click",()=>{if(i<n-1){i++;paint();}});
+  paint();
+}
+function tabs(id,onPick){
+  const box=$(id);
+  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    box.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    onPick(b.dataset.k);
+  }));
+  onPick(box.querySelector("button.on").dataset.k);
+}
+document.querySelectorAll(".copy-code").forEach(btn=>btn.addEventListener("click",async()=>{
+  const target=$(btn.dataset.copy);
+  if(!target)return;
+  const clone=target.cloneNode(true);
+  clone.querySelectorAll(".lab").forEach(label=>label.remove());
+  const value=clone.textContent.trim();
+  try{
+    if(!navigator.clipboard)throw new Error("clipboard unavailable");
+    await navigator.clipboard.writeText(value);
+  }catch(err){
+    const area=document.createElement("textarea");
+    area.value=value;area.setAttribute("readonly","");area.style.position="fixed";area.style.opacity="0";
+    document.body.appendChild(area);area.select();document.execCommand("copy");area.remove();
+  }
+  const original=btn.textContent;
+  btn.textContent="Copiado ✓";btn.classList.add("done");
+  setTimeout(()=>{btn.textContent=original;btn.classList.remove("done");},1400);
+}));
+
+/* ============ helpers propios de la sesión ============ */
+function tx(x,y,t,size,col,anchor,weight,mono){return '<text x="'+x+'" y="'+y+'" font-size="'+(size||13)+'" fill="'+(col||"#93A3BF")+'"'+(anchor?' text-anchor="'+anchor+'"':'')+(weight?' font-weight="'+weight+'"':'')+(mono?' font-family="IBM Plex Mono,monospace"':'')+'>'+t+'</text>';}
+function bx(x,y,w,h,fill,stroke,rx){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+(rx==null?10:rx)+'" fill="'+fill+'" stroke="'+(stroke||"none")+'" stroke-width="1.4"/>';}
+function path(d,on,dash){return '<path class="ln'+(on?" fl":"")+'" d="'+d+'" fill="none" stroke="'+(on?"#FF7A50":"#2E4467")+'" stroke-width="'+(on?2.4:1.6)+'"'+(dash&&!on?' stroke-dasharray="4 6"':'')+'/>';}
+function st(k,i){return k===i?"on":(k<i?"past":"off");}
+function gauge(nombre,valor){
+  const R=30,C=2*Math.PI*R,off=(C*(1-valor)).toFixed(1);
+  return '<div class="gau"><svg viewBox="0 0 82 82"><circle cx="41" cy="41" r="'+R+'" fill="none" stroke="#E7EAF0" stroke-width="7"/>'+
+    '<circle class="arc" cx="41" cy="41" r="'+R+'" fill="none" stroke="#FF7A50" stroke-width="7" stroke-linecap="round" transform="rotate(-90 41 41)" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off+'"/>'+
+    '<text class="gv" x="41" y="46" text-anchor="middle">'+Math.round(valor*100)+'</text></svg><span class="gname">'+nombre+'</span></div>';
+}
+function mxBind(scope,data,capId){
+  const cells=document.querySelectorAll(scope+" .cell");
+  cells.forEach(c=>c.addEventListener("click",()=>{cells.forEach(x=>x.classList.toggle("on",x===c));cap(capId,data[c.dataset.k].t,data[c.dataset.k].d);}));
+  cells[0].click();
+}
+
+/* ============ hero ============ */
+(function(){
+  const HERO_NODES=[["Alumno","IN"],["Pan","COORDINA"],["Especialista","DECIDE"],["Tools y MCP","ACTÚA"],["Persona","APRUEBA"]];
+  const st2='<style>.hn rect{fill:#101C31;stroke:#26374F;stroke-width:1.4}.hn text.a{font-size:13px;font-weight:600;fill:#E6EDF7}.hn text.b{font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:.12em;fill:#5B6E8F}.hp{stroke:#26374F;stroke-width:1.6;fill:none;stroke-dasharray:5 8}</style>';
+  let nodes="",lines="";
+  HERO_NODES.forEach((n,k)=>{
+    const x=40+k*198;
+    nodes+='<g class="hn"><rect x="'+x+'" y="78" width="152" height="56" rx="13"'+(k===4?' style="stroke:#FF7A50"':'')+'/><text class="b" x="'+(x+16)+'" y="100">'+n[1]+'</text><text class="a" x="'+(x+16)+'" y="120">'+n[0]+'</text></g>';
+    if(k<HERO_NODES.length-1)lines+='<path class="hp" d="M'+(x+152)+' 106 H'+(x+198)+'"/>';
+  });
+  $("hero-svg").innerHTML=svg("0 0 1000 200",st2+lines+nodes+tx(500,176,"razona · actúa · recuerda · colabora · frena",12,"#5B6E8F","middle",null,true));
+})();
+
+/* ============ A01 · panorama ============ */
+const PA=[
+  {p:"«¿De qué trata el programa de Data Engineer?»",c:"Buscar en documentos",m:"RAG sobre el catálogo",ic:"search",
+   t:"Pedido 1 · lo resuelve el RAG que ya tienes",d:"Buscar y redactar. Es un workflow de dos pasos y no necesita un agente. Si todos los pedidos fueran así, aquí terminaría la sesión.",
+   o:'<span class="lab">respuesta</span>Data Engineer dura 6 meses e incluye pipelines, Spark y orquestación. <span class="good">[fuente: catálogo DE]</span>'},
+  {p:"«¿Cuánto pago con mi descuento en 6 cuotas?»",c:"Calcular con una tool",m:"Function calling",ic:"settings",
+   t:"Pedido 2 · hay que calcular, no buscar",d:"El precio final depende de reglas: descuentos que no se acumulan, recargo desde 7 cuotas, pronto pago con 30 días de anticipación. Eso lo hace una función, y el modelo debe saber cuándo llamarla.",
+   o:'<span class="lab">tool_call</span>cotizar(programa="DE", descuento="exalumno", cuotas=6)\n<span class="good">→ 6 cuotas de S/ 480.00</span>'},
+  {p:"«Listo, matricúlame en ese programa»",c:"Acción que cambia datos",m:"Aprobación humana",ic:"shield-check",
+   t:"Pedido 3 · una acción que no se deshace sola",d:"Registrar una matrícula mueve dinero y cambia datos. El agente puede preparar todo, pero una persona aprueba antes de escribir en la base.",
+   o:'<span class="lab">estado</span><span class="warnc">⏸ pausa · esperando aprobación del asesor</span>\nmatrícula: Ana · DE · 6 cuotas · S/ 2,880.00'},
+  {p:"«Quiero un reembolso, mi caso es especial»",c:"Fuera de su alcance",m:"Derivar a una persona",ic:"users",
+   t:"Pedido 4 · saber decir «esto no me toca»",d:"Un reembolso con un caso especial requiere criterio humano. El agente no improvisa una política: abre un ticket con el contexto y avisa el plazo de respuesta.",
+   o:'<span class="lab">ticket</span>TK-0142 · reembolso · prioridad media\n<span class="good">→ un asesor te responde en 48 horas</span>'}
+];
+stepper("pa",PA.length,i=>{
+  const it=PA[i];
+  $("pa-phase").textContent="Pedido "+(i+1)+" de 4";
+  let s=SVGCSS;
+  PA.forEach((q,k)=>{s+=bx(20,22+k*44,170,34,k===i?"#2A1A16":"#0F1A2C",k===i?"#FF7A50":"#22314C",8)+tx(34,44+k*44,"Pedido "+(k+1),12,k===i?"#fff":"#7C8CA8",null,600);});
+  s+=link(192,39+i*44,250,110,true)+arrow(250,110,true);
+  s+=node(258,72,230,76,it.c,"CAPACIDAD","on",it.ic);
+  s+=link(490,110,540,110,true)+arrow(540,110,true);
+  s+=node(548,72,230,76,it.m,"MECANISMO","on",i===0?"file-text":(i===1?"code":(i===2?"lock":"send")));
+  s+=tx(400,200,i===0?"un RAG basta":"necesita un agente",13,i===0?"#5FE0B4":"#FF7A50","middle",600);
+  $("pa-stage").innerHTML=svg("0 0 800 220",s);
+  term("pa-llm",'<span class="lab">el alumno escribe</span>'+it.p+"\n\n"+it.o);
+  cap("pa-cap",it.t,it.d);
+});
+
+/* ============ A02 · workflow o agente ============ */
+const WF={
+  wf:{mode:"WORKFLOW · pasos fijos",t:"Workflow: el camino lo dibujaste tú",d:"Siempre busca, luego redacta. Si el alumno pide cotizar, el workflow igual busca en el catálogo y responde con texto: no tiene cómo calcular. Es predecible y barato, y por eso es el punto de partida.",
+      o:'<span class="lab">ejecución</span>1. buscar_catalogo("cuánto pago DE con descuento 6 cuotas")\n2. redactar(fragmentos)\n<span class="warnc">→ «El programa cuesta S/ 3,600. Consulta descuentos con admisión.»</span>'},
+  ag:{mode:"AGENTE · el modelo decide",t:"Agente: el camino lo elige el modelo en cada vuelta",d:"Lee la pregunta, decide consultar al alumno, luego cotizar, y para cuando tiene la respuesta. Otra pregunta generaría otra ruta. Esa flexibilidad es lo que pagas en tokens y en pruebas.",
+      o:'<span class="lab">traza</span>Thought: necesito saber si es exalumna\nAction: consultar_alumno(dni="45781236")  <span class="good">→ exalumna</span>\nThought: ahora puedo cotizar con su descuento\nAction: cotizar(programa="DE", descuento="exalumno", cuotas=6)\n<span class="good">→ «Pagarías 6 cuotas de S/ 480.»</span>'}
+};
+tabs("wf-tabs",k=>{
+  const it=WF[k];let s=SVGCSS;
+  $("wf-mode").textContent=it.mode;
+  if(k==="wf"){
+    s+=node(30,80,150,64,"Pregunta","ENTRADA","past","user")+link(180,112,225,112,true)+arrow(225,112,true)+
+      node(232,80,160,64,"Buscar","PASO 1 · FIJO","on","search")+link(392,112,437,112,true)+arrow(437,112,true)+
+      node(444,80,160,64,"Redactar","PASO 2 · FIJO","on","file-text")+link(604,112,649,112,true)+arrow(649,112,true)+
+      node(656,80,120,64,"Fin","SALIDA","past");
+    s+=tx(400,190,"el código decide el orden · el LLM solo redacta",12.5,"#93A3BF","middle");
+  }else{
+    s+=node(300,74,200,76,"LLM decide","CADA VUELTA","on","brain");
+    [["consultar_alumno",30,"user"],["cotizar",30,"settings"],["buscar_catalogo",600,"search"],["registrar",600,"lock"]].forEach((t,j)=>{
+      const y=j%2===0?20:140;
+      s+=node(t[1],y,170,56,t[0],"TOOL",j<2?"past":"off",t[2]);
+      s+=path("M"+(t[1]<300?200:600)+" "+(y+28)+" L"+(t[1]<300?300:500)+" 112",j<2,true);
+    });
+    s+=tx(400,196,"¿ya tengo la respuesta? → si no, otra vuelta (máx. N)",12.5,"#FF7A50","middle",600);
+  }
+  $("wf-stage").innerHTML=svg("0 0 800 210",s);
+  term("wf-llm",it.o);cap("wf-cap",it.t,it.d);
+});
+
+/* ============ A03 · anatomía ============ */
+const AN=[
+  ["Instrucciones","SYSTEM PROMPT","settings","Instrucciones: el contrato del agente","Rol, tono, reglas y lo que nunca debe hacer. «Eres el analista de ventas. Solo SQL de lectura. Nunca inventes cifras.» Todo lo que sea regla dura, además, va en código: el prompt orienta, no garantiza."],
+  ["LLM decide","EL CENTRO","brain","El modelo decide el siguiente paso","Con las instrucciones, el historial y la lista de tools, el modelo elige: responder ya o pedir una tool. Nunca ejecuta nada por sí mismo."],
+  ["Tool","ACCIÓN","zap","La tool es lo único que toca el mundo real","Tu código recibe el pedido, valida permisos y argumentos y ejecuta. Aquí viven la seguridad, los límites y la auditoría."],
+  ["Observación","RESULTADO","eye","El resultado vuelve al modelo","La salida de la tool entra al contexto como observación. Un buen mensaje de error aquí («máximo 12 cuotas») vale más que una regla en el prompt."],
+  ["Memoria","CONTEXTO","database","Memoria: qué recuerda entre vueltas y entre días","El hilo actual (corto plazo) y los hechos del usuario (largo plazo). Sin memoria, cada mensaje empieza de cero."],
+  ["Tope y fin","LOOP","refresh-cw","El loop siempre tiene tope","El ciclo se repite hasta que el modelo responde o se alcanza el máximo de vueltas. Sin tope, un agente confundido llama la misma tool para siempre."]
+];
+stepper("an",AN.length,i=>{
+  $("an-phase").textContent=AN[i][1];
+  const P=[[40,20],[310,20],[580,20],[580,150],[310,150],[40,150]];
+  let s=SVGCSS;
+  P.forEach((p,k)=>{
+    const n=(k+1)%P.length,q=P[n];
+    if(k<5){const x1=k<2?p[0]+180:(k===2?p[0]+90:p[0]),y1=k<2?p[1]+33:(k===2?p[1]+66:p[1]+33),x2=k<2?q[0]:(k===2?q[0]+90:q[0]+180),y2=k<2?q[1]+33:(k===2?q[1]:q[1]+33);
+      s+=link(x1,y1,x2,y2,k===i||k+1===i);}
+  });
+  s+=path("M130 150 L130 86",i===5,true);
+  AN.forEach((a,k)=>{s+=node(P[k][0],P[k][1],180,66,a[0],a[1],st(k,i),a[2]);});
+  $("an-stage").innerHTML=svg("0 0 800 230",s);
+  cap("an-cap",AN[i][3],AN[i][4]);
+});
+
+/* ============ A04 · patrones ============ */
+const PT={
+  tu:{q:.45,mode:"TOOL-USE-ONLY · 1 a 2 llamadas",g:[.12,.1,.1],t:"Tool-Use-Only: una pasada y listo",d:"El modelo emite la llamada y responde con el resultado. No escribe razonamiento ni planifica. Barato y rápido: muchos asistentes de producción viven aquí. Su límite son los pasos encadenados.",
+      n:[["Pregunta",40,80,"user"],["LLM",250,80,"brain"],["Tool",460,80,"zap"],["Respuesta",640,80,"send"]],e:[[0,1],[1,2],[2,3]],
+      o:'«¿Cuánto dura Data Engineer?»\n→ buscar_programa("DE") <span class="good">→ 6 meses</span>'},
+  re:{q:.65,mode:"REACT · 3 a 10 llamadas",g:[.4,.4,.35],t:"ReAct: pensar, actuar, observar",d:"Alterna razonamiento y acciones. Cada Thought justifica la siguiente Action, así que la traza se puede leer. Es el patrón por defecto. Siempre con máximo de iteraciones.",
+      n:[["Thought",60,30,"brain"],["Action",320,30,"zap"],["Observation",580,30,"eye"],["Respuesta",320,140,"send"]],e:[[0,1],[1,2],[2,0],[2,3]],
+      o:'Thought: necesito el precio y su descuento\nAction: cotizar(DE, exalumno, 6)\nObservation: 6 cuotas de 480\nThought: ya puedo responder <span class="good">✓</span>'},
+  pe:{q:.75,mode:"PLAN-AND-EXECUTE · 1 plan + 1 por paso",g:[.55,.65,.45],t:"Plan-and-Execute: primero el plan completo",d:"Un modelo potente planifica, uno barato ejecuta cada paso, y un replanner ajusta si algo cambia. El plan es visible: una persona puede aprobarlo antes de empezar.",
+      n:[["Planner",30,85,"list-checks"],["Paso 1",250,20,"check"],["Paso 2",250,85,"check"],["Paso 3",250,150,"check"],["Executor",470,85,"cpu"],["Replanner",650,85,"refresh-cw"]],e:[[0,1],[0,2],[0,3],[1,4],[2,4],[3,4],[4,5]],
+      o:'Plan: 1) nivel de Python  2) programas sugeridos  3) calendario\nEjecuta paso 1... paso 2... paso 3 <span class="good">→ ruta de 6 meses</span>'},
+  rf:{q:.85,mode:"REFLEXION · 2 a 3 veces el patrón base",g:[.65,.7,.6],t:"Reflexion: evaluar y reintentar con una lección",d:"Un evaluador revisa el resultado con un criterio verificable y escribe una lección que entra al siguiente intento. En el paper original subió de 80% a 91% en HumanEval. Sin criterio claro, la autocrítica no mejora nada.",
+      n:[["Actor",40,85,"bot"],["Evaluador",300,30,"shield-check"],["Lección",560,85,"file-text"],["Respuesta",300,150,"send"]],e:[[0,1],[1,2],[2,0],[1,3]],
+      o:'Intento 1: «6 cuotas de 520»\nEvaluador: <span class="bad">no coincide con cotizar() → 480</span>\nLección: usar solo cifras de la tool\nIntento 2: «6 cuotas de 480» <span class="good">✓</span>'},
+  la:{q:.92,mode:"LATS · decenas de llamadas",g:[.95,.95,.9],t:"LATS: explorar varios caminos como un árbol",d:"Genera varias rutas, las puntúa y expande la mejor, combinando búsqueda en árbol con reflexión. Es el más potente y el más caro. Rara vez se justifica fuera de problemas difíciles como código complejo o planificación con restricciones.",
+      n:[["Raíz",340,10,"git-branch"],["Ruta A",100,85,"route"],["Ruta B",340,85,"route"],["Ruta C",580,85,"route"],["A1",40,160,"x"],["B1 ★",340,160,"check"],["C1",640,160,"x"]],e:[[0,1],[0,2],[0,3],[1,4],[2,5],[3,6]],
+      o:'Ruta A: 0.4  Ruta B: <span class="good">0.9</span>  Ruta C: 0.3\nExpande B → B1 <span class="good">★ mejor solución</span>'}
+};
+tabs("pt-tabs",k=>{
+  const it=PT[k];$("pt-mode").textContent=it.mode;
+  const W=150,H=56;let s=SVGCSS;
+  it.e.forEach(e=>{const a=it.n[e[0]],b=it.n[e[1]];s+=path("M"+(a[1]+W/2)+" "+(a[2]+H/2)+" L"+(b[1]+W/2)+" "+(b[2]+H/2),true);});
+  it.n.forEach((n,j)=>{s+=node(n[1],n[2],W,H,n[0],"",j===0?"on":"past",n[3]);});
+  $("pt-stage").innerHTML=svg("0 0 800 225",s);
+  $("pt-gg").innerHTML=[["Llamadas",it.g[0]],["Latencia",it.g[1]],["Costo",it.g[2]],["Calidad en tareas difíciles",it.q]].map(g=>gauge(g[0],g[1])).join("");
+  term("pt-llm",'<span class="lab">en el instituto</span>'+it.o);cap("pt-cap",it.t,it.d);
+});
+mxBind(".mx:not(#fw-mx)",{
+  a:{t:"Tool-Use-Only",d:"Una llamada basta. Agregar razonamiento solo suma latencia. Es el caso de la mayoría de consultas de datos simples."},
+  b:{t:"Plan-and-Execute",d:"Los pasos se anticipan y son varios. El plan visible permite que el alumno o un asesor lo revise antes de ejecutar, y el modelo caro solo planifica."},
+  c:{t:"ReAct",d:"El siguiente paso depende de lo que descubre: si es exalumna, si hay vacantes. Pocas vueltas y un tope. Súmale Reflexion si puedes verificar las cifras contra la tool."},
+  d:{t:"Plan-and-Execute con replanner",d:"Tarea larga y entorno que cambia: planifica, ejecuta y replanifica cuando un paso falla. Si equivocarse es carísimo y hay tiempo, LATS explora alternativas."}
+},"mx-cap");
+
+/* ============ A06 · function calling ============ */
+const FC=[
+  ["Pregunta + tools","La app envía la pregunta y el schema de cada tool","El modelo recibe la pregunta y el manual de cada tool: nombre, descripción y parámetros con sus tipos. No recibe el código.",
+   '<span class="lab">request</span>user: «¿Cuánto pago DE en 6 cuotas? soy exalumna»\ntools: [{"name":"cotizar","parameters":{"programa":{"enum":["DA","DE","AIE"]},"cuotas":{"minimum":1,"maximum":12}, ...}}]'],
+  ["tool_call","El modelo devuelve un JSON, no ejecuta nada","La respuesta del modelo es un pedido: name, args e id. El id une esta llamada con su resultado cuando hay varias en paralelo.",
+   '<span class="lab">response</span>{"tool_calls":[{"id":"call_7","name":"cotizar","args":{"programa":"DE","descuento":"exalumno","cuotas":6}}]}'],
+  ["Validar","Pydantic revisa los argumentos antes de ejecutar","Tu código convierte el JSON en un objeto tipado. Si el modelo hubiera pedido 24 cuotas, aquí falla y el error vuelve al modelo para que corrija.",
+   '<span class="lab">pydantic</span>Cotizacion(programa="DE", cuotas=6) <span class="good">✓ válido</span>\nCotizacion(cuotas=24) <span class="bad">✗ cuotas: Input should be less than or equal to 12</span>'],
+  ["Ejecutar","Tu código decide si la ejecuta y con qué permisos","Aquí viven las reglas de negocio: descuento no acumulable, recargo desde 7 cuotas. El modelo no puede saltárselas porque no las ejecuta.",
+   '<span class="lab">tool result</span>{"tool_call_id":"call_7","content":{"precio_final":2880.0,"valor_cuota":480.0,"descuento_pct":20}}'],
+  ["Respuesta","El modelo redacta con el resultado","Con la observación en el contexto, el modelo responde en lenguaje natural. Si la cifra no coincide con la tool, un revisor lo detecta.",
+   '<span class="lab">assistant</span><span class="good">«Con tu descuento de exalumna pagarías 6 cuotas de S/ 480 (total S/ 2,880, con 20% de descuento).»</span>']
+];
+stepper("fc",FC.length,i=>{
+  $("fc-phase").textContent="Paso "+(i+1);
+  const X=[20,180,340,500,660],L=["App","LLM","Pydantic","Tu código","LLM"],I=["user","brain","shield-check","code","send"];
+  let s=SVGCSS;
+  X.forEach((x,k)=>{s+=node(x,70,130,66,L[k],FC[k][0].toUpperCase(),st(k,i),I[k]);if(k<4)s+=link(x+130,103,X[k+1],103,k<i)+arrow(X[k+1],103,k<i);});
+  s+=tx(400,190,FC[i][1],13,"#E6EDF7","middle",600);
+  $("fc-stage").innerHTML=svg("0 0 800 210",s);
+  term("fc-llm",FC[i][3]);cap("fc-cap",FC[i][0],FC[i][2]);
+});
+
+/* ============ A07 · paralelo y errores ============ */
+const PL={
+  sec:{mode:"SECUENCIAL · 3.0 s",bars:[[0,1,"ok"],[1,1,"ok"],[2,1,"ok"]],t:"Secuencial: cada consulta espera a la anterior",d:"Tres lecturas independientes de un segundo cada una suman tres segundos. Además, el modelo puede necesitar una vuelta por cada una.",
+      o:'vacantes("DA") 1.0s → vacantes("DE") 1.0s → vacantes("AISA") 1.0s\n<span class="warnc">total 3.0 s · 3 vueltas del LLM</span>'},
+  par:{mode:"PARALELO · 1.0 s",bars:[[0,1,"ok"],[0,1,"ok"],[0,1,"ok"]],t:"Paralelo: el modelo pide las tres en una respuesta",d:"Tu código las ejecuta a la vez y el total tarda lo que la más lenta. Solo con lecturas: en escrituras el orden importa.",
+      o:'tool_calls: [vacantes("DA"), vacantes("DE"), vacantes("AISA")]\n<span class="good">total 1.0 s · 1 vuelta del LLM</span>'},
+  err:{mode:"CON ERROR · reintento y mensaje",bars:[[0,1,"ok"],[0,.6,"bad"],[0,1,"ok"],[1.6,1,"ok"]],t:"Una falla no debe tumbar al agente",d:"La consulta de DE da timeout. El ejecutor la clasifica como transitoria, espera y reintenta. Si fallara de nuevo, devuelve un mensaje útil al modelo en vez de una excepción.",
+      o:'vacantes("DE") <span class="bad">✗ Timeout</span> → backoff 1s → reintento <span class="good">✓ 4 vacantes</span>\nsi fallara otra vez: {"error":"servicio de vacantes no responde, ofrece verificar más tarde"}'}
+};
+tabs("pl-tabs",k=>{
+  const it=PL[k];$("pl-mode").textContent=it.mode;let s=SVGCSS;
+  const L=["DA","DE","AISA","DE (2)"],U=180;
+  for(let t=0;t<=3;t++){s+='<line x1="'+(120+t*U)+'" y1="20" x2="'+(120+t*U)+'" y2="190" stroke="#1C2A42"/>'+tx(120+t*U,205,t+" s",11,"#5B6E8F","middle",null,true);}
+  it.bars.forEach((b,j)=>{const y=28+j*40;s+=tx(30,y+21,L[j],12.5,"#E6EDF7",null,600)+'<rect class="pp" x="'+(120+b[0]*U)+'" y="'+y+'" width="'+(b[1]*U)+'" height="28" rx="7" fill="'+(b[2]==="ok"?"#17BFB0":"#C93B32")+'" opacity=".9"/>';});
+  $("pl-stage").innerHTML=svg("0 0 800 215",s);
+  term("pl-llm",it.o);cap("pl-cap",it.t,it.d);
+});
+
+/* ============ A08 · MCP ============ */
+const MC={
+  sin:{mode:"SIN MCP · 12 integraciones",t:"Sin MCP: cada agente integra cada sistema",d:"Tres agentes por cuatro sistemas son doce integraciones a mano. Cada una con su autenticación, sus errores y su mantenimiento."},
+  con:{mode:"CON MCP · se publica una vez",t:"Con MCP: un protocolo en el medio",d:"Cada sistema publica un servidor MCP. Cada agente es un cliente que pregunta list_tools y llama call_tool. Agregar un quinto sistema no toca a los agentes."},
+  fil:{mode:"FILTRADO · 4 de unas 30 tools",t:"En el Lab 3: el analista solo ve 4 tools",d:"El servidor MCP de Neon ofrece unas 30 tools. Con tool_filter el analista ve 4 de lectura, y la URL lleva readonly=true. delete_project ni siquiera aparece en su lista."}
+};
+tabs("mc-tabs",k=>{
+  const it=MC[k];$("mc-mode").textContent=it.mode;let s=SVGCSS;
+  const A=["Agente A","Agente B","Agente C"],S=[["Neon","database"],["GitHub","git-branch"],["Drive","folder"],["CRM","users"]];
+  if(k==="sin"){A.forEach((a,j)=>{S.forEach((x,m)=>{s+='<line x1="190" y1="'+(45+j*65)+'" x2="560" y2="'+(32+m*50)+'" stroke="#C93B32" stroke-width="1" opacity=".7"/>';});s+=node(40,18+j*65,150,54,a,"","past","bot");});
+    S.forEach((x,m)=>{s+=node(560,8+m*50,170,44,x[0],"",  "off",x[1]);});}
+  else if(k==="con"){A.forEach((a,j)=>{s+=node(20,18+j*65,150,54,a,"CLIENTE","past","bot")+link(170,45+j*65,300,110,true);});
+    s+=node(300,60,170,100,"MCP","PROTOCOLO","on","plug");
+    S.forEach((x,m)=>{s+=link(470,110,580,32+m*50,true)+node(580,8+m*50,190,44,"MCP "+x[0],"","past",x[1]);});}
+  else{s+=node(20,80,170,60,"analista_ventas","AGENTE","on","bot")+link(190,110,270,110,true)+arrow(270,110,true);
+    s+=bx(280,10,500,200,"#0F1A2C","#22314C",12)+tx(296,32,"SERVIDOR MCP DE NEON · ?readonly=true",10,"#5B6E8F",null,null,true);
+    const T=[["list_projects",1],["get_database_tables",1],["describe_table_schema",1],["run_sql",1],["delete_project",0],["create_branch",0],["provision_neon_auth",0],["reset_from_parent",0]];
+    T.forEach((t,j)=>{const x=296+(j%2)*240,y=48+Math.floor(j/2)*38;s+=bx(x,y,226,30,t[1]?"#2A1A16":"#0B1322",t[1]?"#FF7A50":"#1C2A42",7)+tx(x+12,y+20,(t[1]?"✓ ":"✗ ")+t[0],11.5,t[1]?"#fff":"#55657F",null,null,true);});
+    s+=tx(530,205,"+ unas 22 tools más ocultas",10.5,"#5B6E8F","middle");}
+  $("mc-stage").innerHTML=svg("0 0 800 220",s);
+  term("mc-llm",k==="fil"?'<span class="lab">mcp_setup.py</span>McpToolset(\n  connection_params=StreamableHTTPConnectionParams(url=".../mcp?readonly=true"),\n  <span class="good">tool_filter=["list_projects","get_database_tables","describe_table_schema","run_sql"]</span>)':
+    (k==="con"?'<span class="lab">cliente MCP</span>list_tools() → [run_sql, get_database_tables, ...]\ncall_tool("run_sql", {"sql":"select count(*) from productos"}) <span class="good">→ 15</span>':'<span class="lab">mantenimiento</span><span class="bad">cambia la API del CRM → se rompen 3 integraciones</span>'));
+  cap("mc-cap",it.t,it.d);
+});
+
+/* ============ A09 · memoria ============ */
+const ME={
+  st:{mode:"SHORT-TERM · esta conversación",w:"Checkpointer + thread_id",ic:"message-square",t:"Corto plazo: lo que se dijo en este hilo",d:"Es la conversación actual. En LangGraph la guarda el checkpointer, separada por thread_id. Muere cuando termina el hilo o se recorta la ventana.",
+      o:'thread 42 · «quiero DE» · «¿y en 6 cuotas?» → sabe que «eso» es DE'},
+  lt:{mode:"LONG-TERM · entre sesiones",w:"Store por usuario",ic:"database",t:"Largo plazo: hechos del usuario que sobreviven",d:"Datos estables, buscables por significado: es exalumna, prefiere horario nocturno. En LangGraph es el store, organizado por usuario.",
+      o:'store[("alumnos","45781236")] = {exalumna: true, horario: "noche", fuente: "chat 2026-11-03"}'},
+  ep:{mode:"EPISODIC · qué pasó antes",w:"Log de casos y tickets",ic:"clock",t:"Episódica: el historial de lo que ocurrió",d:"Casos, decisiones y su resultado. Clave en soporte y seguros, donde un caso dura semanas y el cliente no quiere repetir todo.",
+      o:'2026-11-03 cotizó DE · 2026-11-05 ticket TK-0142 reembolso (abierto)'},
+  se:{mode:"SEMANTIC · hechos y relaciones",w:"Grafo o base de conocimiento",ic:"network",t:"Semántica: cómo se relacionan las cosas",d:"Hechos del dominio y sus relaciones: DE requiere Python intermedio, AIE se apoya en DE. Un knowledge graph es la forma típica.",
+      o:'(DE)-[requiere]->(Python intermedio)   (AIE)-[continúa]->(DE)'}
+};
+tabs("me-tabs",k=>{
+  const it=ME[k];$("me-mode").textContent=it.mode;let s=SVGCSS;
+  s+=node(40,70,180,70,"Agente","LEE Y ESCRIBE","past","bot")+link(220,105,300,105,true)+arrow(300,105,true);
+  s+=node(308,60,230,90,it.w,"DÓNDE VIVE","on",it.ic);
+  const D={st:"minutos",lt:"meses",ep:"semanas o años",se:"mientras el dominio no cambie"};
+  s+=tx(580,95,"DURA",10,"#5B6E8F",null,null,true)+tx(580,118,D[k],14,"#E6EDF7",null,600);
+  $("me-stage").innerHTML=svg("0 0 800 210",s);
+  term("me-llm",'<span class="lab">ejemplo con Ana</span>'+it.o);cap("me-cap",it.t,it.d);
+});
+function pintarVentana(n){
+  $("vt-n").textContent=n;let s=SVGCSS;const max=16,H=150,bw=30;
+  for(let t=1;t<=20;t++){
+    const sin=0.8*t,con=Math.min(0.8*t,3.3),x=40+(t-1)*36,a=t<=n;
+    s+='<rect x="'+x+'" y="'+(170-sin/max*H)+'" width="'+(bw/2)+'" height="'+(sin/max*H)+'" rx="3" fill="'+(a?"#C93B32":"#1C2A42")+'"/>';
+    s+='<rect x="'+(x+bw/2)+'" y="'+(170-con/max*H)+'" width="'+(bw/2)+'" height="'+(con/max*H)+'" rx="3" fill="'+(a?"#17BFB0":"#1C2A42")+'"/>';
+  }
+  s+=tx(40,198,"turno 1",10,"#5B6E8F",null,null,true)+tx(760,198,"turno 20",10,"#5B6E8F","end",null,true);
+  s+=bx(560,10,12,12,"#C93B32",null,3)+tx(578,21,"sin gestión",11,"#93A3BF")+bx(660,10,12,12,"#17BFB0",null,3)+tx(678,21,"ventana + resumen",11,"#93A3BF");
+  $("vt-stage").innerHTML=svg("0 0 800 210",s);
+  const sin=(0.8*n).toFixed(1),con=Math.min(0.8*n,3.3).toFixed(1);
+  cap("vt-cap","Turno "+n+": "+sin+" mil tokens contra "+con+" mil",n<5?"En los primeros turnos no hay diferencia: todo cabe. El problema aparece cuando la conversación se alarga.":"Sin gestión, cada turno reenvía todo y el costo crece sin techo. Con ventana y resumen se estabiliza. El dato clave «Ana es exalumna» no se pierde porque vive en la memoria de largo plazo, no en el hilo. (Cifras ilustrativas.)");
+}
+$("vt-r").addEventListener("input",e=>pintarVentana(+e.target.value));pintarVentana(6);
+
+/* ============ A11 · comunicación ============ */
+$("ic-tools").innerHTML=icon("settings",20,"var(--coral-d)");$("ic-perm").innerHTML=icon("lock",20,"var(--coral-d)");$("ic-par").innerHTML=icon("git-branch",20,"var(--coral-d)");
+const CO={
+  mp:{mode:"MESSAGE PASSING",t:"Message passing: como un correo entre áreas",d:"Cada agente envía mensajes a otro y solo ve lo que le llega. Sirve entre equipos o sistemas que no comparten base de datos. Ejemplo: ventas avisa a facturación. Protocolos como A2A de Google van por aquí."},
+  ss:{mode:"SHARED STATE",t:"Shared state: una pizarra común",d:"Todos leen y escriben el mismo estado: mensajes, intención, cotización, aprobación. Es lo que usa LangGraph y lo que usa el Lab 2. Fácil de depurar porque todo está en un lugar."},
+  hi:{mode:"HIERARCHICAL",t:"Hierarchical: un jefe que reparte",d:"Un supervisor recibe todo y delega a especialistas. Un único punto de entrada para muchos especialistas. Es Pan en el Lab 3 y el supervisor en el Lab 2."},
+  db:{mode:"DEBATE",t:"Debate: dos abogados y un juez",d:"Un proponente y un crítico discuten y un juez decide con una rúbrica. Revela errores que un solo agente no vería. Para decisiones de alto impacto, como una beca excepcional. Limita a 2 o 3 rondas."}
+};
+tabs("co-tabs",k=>{
+  const it=CO[k];$("co-mode").textContent=it.mode;let s=SVGCSS;
+  if(k==="mp"){s+=node(40,80,180,60,"Ventas","AGENTE","past","bot")+node(580,80,180,60,"Facturación","AGENTE","past","bot");
+    s+=link(220,100,580,100,true)+arrow(580,100,true)+link(580,125,220,125,false,true)+tx(400,90,"«cerré el contrato C-88»",12,"#FF7A50","middle")+tx(400,150,"«factura emitida»",12,"#5B6E8F","middle");}
+  else if(k==="ss"){s+=node(300,70,200,80,"Estado","PIZARRA COMÚN","on","layers");
+    [["Supervisor",30,20],["Académico",30,140],["Matrícula",590,20],["Soporte",590,140]].forEach(a=>{s+=node(a[1],a[2],180,56,a[0],"LEE / ESCRIBE","past","bot")+path("M"+(a[1]<300?210:590)+" "+(a[2]+28)+" L"+(a[1]<300?300:500)+" 110",true);});}
+  else if(k==="hi"){s+=node(310,15,180,60,"Pan","COORDINADOR","on","route");
+    [["asesor_academico",20],["analista_ventas",290],["operaciones",560]].forEach(a=>{s+=path("M400 75 L400 100 L"+(a[1]+110)+" 100 L"+(a[1]+110)+" 135",true)+node(a[1],135,220,60,a[0],"ESPECIALISTA","past","bot");});}
+  else{s+=node(40,30,180,60,"Proponente","A FAVOR","past","message-square")+node(40,130,180,60,"Crítico","EN CONTRA","past","alert-triangle");
+    s+=link(220,60,560,105,true)+link(220,160,560,115,true)+node(560,80,200,64,"Juez","RÚBRICA","on","shield-check")+path("M130 90 L130 130",true);}
+  $("co-stage").innerHTML=svg("0 0 800 215",s);cap("co-cap",it.t,it.d);
+});
+
+/* ============ A12 · delegación (Lab 2) ============ */
+const DG={
+  ac:{r:["sup","aca","rev","out"],t:"Duda académica: académico y revisor",d:"El supervisor clasifica «académica» con confianza alta. El académico (ReAct) busca en el reglamento y el catálogo. El revisor verifica el borrador contra la evidencia y puede pedir un reintento.",
+      o:'supervisor → intención=académica · confianza=0.91\nacadémico → buscar_programa("DE") · buscar_politica("requisitos")\nrevisor → <span class="good">aprobado: cada dato tiene evidencia</span>'},
+  co:{r:["sup","mat","out"],t:"Cotización: reglas en código, sin pausa",d:"Solo cotizar no cambia datos, así que no hace falta aprobación. El cálculo lo hace la función cotizar() con las reglas del instituto.",
+      o:'supervisor → intención=cotización · 0.88\nmatrícula → cotizar("DE","exalumno",6) <span class="good">→ 6 x 480</span>'},
+  ma:{r:["sup","mat","apr","reg","out"],t:"Matrícula: el grafo se pausa y espera a una persona",d:"El código verifica elegibilidad (deuda, vacantes, nivel). Si procede, interrupt() pausa el grafo con la cotización. El asesor aprueba y recién entonces se registra.",
+      o:'matrícula → verificar_elegibilidad(45781236, DE) <span class="good">✓</span>\naprobación → <span class="warnc">interrupt() ⏸ esperando al asesor</span>\nasesor → aprobar=True · registrar → matrícula M-0031'},
+  re:{r:["sup","sop","out"],t:"Reembolso: escalar, no improvisar",d:"Un reembolso con caso especial está fuera del alcance del agente. Soporte abre un ticket con el contexto y cita la política aplicable. No promete nada que el reglamento no diga.",
+      o:'supervisor → intención=reembolso · tema humano\nsoporte → crear_ticket(tipo="reembolso", política="POL-05") <span class="good">→ TK-0142</span>'}
+};
+tabs("dg-tabs",k=>{
+  const it=DG[k];$("dg-mode").textContent="RUTA · "+it.r.length+" nodos";let s=SVGCSS;
+  const N={sup:[20,95,"Supervisor","route"],aca:[230,15,"Académico","brain"],rev:[430,15,"Revisor","shield-check"],mat:[230,95,"Matrícula","settings"],apr:[430,95,"Aprobación","users"],reg:[600,170,"Registrar","database"],sop:[230,170,"Soporte","send"],out:[640,95,"Respuesta","message-square"]};
+  const E=[["sup","aca"],["aca","rev"],["rev","out"],["sup","mat"],["mat","apr"],["apr","reg"],["reg","out"],["mat","out"],["sup","sop"],["sop","out"]];
+  const on=(a,b)=>{const i=it.r.indexOf(a);return i>=0&&it.r[i+1]===b;};
+  E.forEach(e=>{const a=N[e[0]],b=N[e[1]];s+=path("M"+(a[0]+150)+" "+(a[1]+25)+" C"+(a[0]+190)+" "+(a[1]+25)+" "+(b[0]-40)+" "+(b[1]+25)+" "+b[0]+" "+(b[1]+25),on(e[0],e[1]),true);});
+  Object.keys(N).forEach(n=>{const v=N[n];s+=node(v[0],v[1],150,50,v[2],"",it.r.includes(n)?"on":"off",v[3]);});
+  $("dg-stage").innerHTML=svg("0 0 800 230",s);term("dg-llm",it.o);cap("dg-cap",it.t,it.d);
+});
+
+/* ============ A13 · approval gate ============ */
+const AG=[
+  ["Proponer","El agente prepara la matrícula","Calcula la cotización y verifica la elegibilidad en código. Todavía no escribe nada en la base.",'matrícula → {alumno: Ana, programa: DE, cuotas: 6, total: 2880}'],
+  ["Pausar","interrupt() detiene el grafo","El nodo de aprobación llama interrupt() con lo que la persona debe revisar. El grafo se detiene ahí mismo.",'decision = interrupt({"cotizacion": state["cotizacion"]})\n<span class="warnc">⏸ grafo en pausa</span>'],
+  ["Guardar","El checkpointer guarda el estado","Todo el estado queda persistido con su thread_id. La pausa puede durar minutos o días sin perder nada.",'checkpointer.put(thread_id="ana-0311", estado=...) <span class="good">✓</span>'],
+  ["Decidir","Una persona aprueba, rechaza o edita","El asesor ve la solicitud en su bandeja. Puede aprobar tal cual, rechazar con un motivo o cambiar las cuotas.",'asesor.rios → {"aprobar": true, "motivo": "ok"}'],
+  ["Reanudar","Command(resume=...) continúa el mismo hilo","El grafo retoma con la decisión. Ojo: el nodo se ejecuta otra vez desde el inicio, por eso no debe llamar al LLM.",'sistema.invoke(Command(resume={"aprobar": True}), config)'],
+  ["Registrar","Recién ahora se escribe en la base","El nodo registrar revalida y escribe la matrícula con quién la aprobó y cuándo. En ADK, el Lab 3 hace lo mismo con request_confirmation.",'<span class="good">matrícula M-0031 · aprobada por asesor.rios · 2026-11-16 10:42</span>']
+];
+stepper("ag",AG.length,i=>{
+  $("ag-phase").textContent=AG[i][0].toUpperCase();
+  let s=SVGCSS;const I=["file-text","clock","database","users","refresh-cw","check"];
+  AG.forEach((a,k)=>{const x=10+k*132;s+=node(x,70,120,64,a[0],"PASO "+(k+1),st(k,i),I[k]);if(k<5)s+=link(x+120,102,x+132,102,k<i);});
+  s+=tx(400,180,AG[i][1],13.5,"#E6EDF7","middle",600);
+  $("ag-stage").innerHTML=svg("0 0 800 205",s);term("ag-llm",AG[i][3]);cap("ag-cap",AG[i][1],AG[i][2]);
+});
+
+/* ============ A14 · umbral de confianza ============ */
+function pintarUmbral(v){
+  const c=v/100;$("uc-n").textContent=c.toFixed(2);let s=SVGCSS;
+  s+=bx(40,60,360,40,"#3A1D1D",null,8)+bx(400,60,160,40,"#3A2E14",null,0)+bx(560,60,200,40,"#123328",null,8);
+  s+=tx(220,85,"derivar a una persona",12,"#FF9A9A","middle")+tx(480,85,"preguntar",12,"#FFC978","middle")+tx(660,85,"responder",12,"#5FE0B4","middle");
+  s+=tx(400,125,"0.5",11,"#5B6E8F","middle",null,true)+tx(560,125,"0.8",11,"#5B6E8F","middle",null,true);
+  const x=40+c*720;s+='<line x1="'+x+'" y1="45" x2="'+x+'" y2="115" stroke="#FF7A50" stroke-width="3"/><circle cx="'+x+'" cy="45" r="7" fill="#FF7A50"/>';
+  const z=c<.5?["Derivar","«Lo de la otra vez» es ambiguo y no hay forma segura de adivinar. Se abre un ticket con el contexto para una persona."]:(c<.8?["Preguntar","Hay una intención probable pero no segura. El agente hace una pregunta corta: «¿te refieres a la cotización de DE?»"]:["Responder","La intención es clara. El agente sigue con el especialista que corresponde."]);
+  s+=tx(400,170,"zona: "+z[0],15,"#E6EDF7","middle",600);
+  $("uc-stage").innerHTML=svg("0 0 800 190",s);
+  cap("uc-cap",z[0]+" con confianza "+c.toFixed(2),z[1]+" Los umbrales 0.5 y 0.8 son un ejemplo: se calibran con casos reales, combinando reglas, scores del retriever y clasificadores. En el Lab 2 el umbral es 0.6.");
+}
+$("uc-r").addEventListener("input",e=>pintarUmbral(+e.target.value));pintarUmbral(72);
+
+/* ============ A15 · traza ============ */
+const TR=[
+  ["user","Usuario","«¿Qué vendedor vendió más en total?»","El evento inicial. adk web lo muestra con autor user.",'{"author":"user","text":"¿Qué vendedor vendió más en total?"}',0,0],
+  ["Pan","Pan","transfer_to_agent → analista_ventas","Pan no responde: decide. Su única llamada es la transferencia. Este es el evento que demuestra la delegación jerárquica.",'{"evento":"modelo","agente":"Pan","decision":"llamar: transfer_to_agent","tokens_entrada":812}',620,812],
+  ["analista_ventas","Analista","get_database_tables()","Primera tool MCP: qué tablas existen. El callback before_tool la registra con el agente y sus argumentos.",'{"evento":"tool_inicio","agente":"analista_ventas","tool":"get_database_tables","argumentos":"{}"}',180,0],
+  ["analista_ventas","Analista","describe_table_schema(\"ventas\")","Conoce las columnas antes de escribir SQL. Así evita inventar nombres de columna.",'{"evento":"tool_fin","tool":"describe_table_schema","ms":205}',205,0],
+  ["analista_ventas","Analista","run_sql(SELECT v.nombres, SUM(total_venta) ...)","El SQL generado queda visible con sus argumentos. Si alguien pidiera un DROP, aquí lo vería bloqueado por el guardrail.",'{"evento":"tool_fin","tool":"run_sql","ms":340,"resultado":"[[\\"Pedro Juan Alarcon Vera\\", 21910.00]]"}',340,1420],
+  ["analista_ventas","Analista","revisor_cifras(borrador + evidencia)","El analista llama al revisor como tool. En adk web aparece como una llamada más, con su veredicto JSON.",'{"evento":"modelo","agente":"revisor_cifras","decision":"responder","tokens_entrada":540}',890,540],
+  ["analista_ventas","Analista","«Pedro Juan Alarcón Vera, con S/ 21,910.»","Respuesta final. El callback after_agent guarda pregunta, respuesta y tokens totales en la tabla history.",'{"evento":"Historial guardado","input_tokens":3610,"output_tokens":182}',710,838]
+];
+stepper("tr",TR.length,i=>{
+  $("tr-phase").textContent="EVENTO "+(i+1)+" · "+TR[i][0];
+  let s=SVGCSS,acc=0;const lanes=["user","Pan","analista_ventas"],tot=TR.reduce((a,b)=>a+b[5],0);
+  lanes.forEach((l,j)=>{s+=tx(14,52+j*52,l,11.5,"#93A3BF",null,600,true)+'<line x1="150" y1="'+(46+j*52)+'" x2="780" y2="'+(46+j*52)+'" stroke="#1C2A42"/>';});
+  TR.forEach((e,k)=>{const j=lanes.indexOf(e[0]),w=Math.max(10,e[5]/tot*610),x=155+acc/tot*610;acc+=e[5];
+    s+='<rect x="'+x+'" y="'+(32+j*52)+'" width="'+w+'" height="26" rx="5" fill="'+(k===i?"#FF7A50":(k<i?"#2E4467":"#16233A"))+'"/>';});
+  s+=tx(400,200,TR[i][2],13,"#E6EDF7","middle",600);
+  $("tr-stage").innerHTML=svg("0 0 800 215",s);
+  term("tr-llm",'<span class="lab">línea en la terminal (callbacks)</span>'+TR[i][4]);cap("tr-cap","Evento "+(i+1)+" · "+TR[i][1],TR[i][3]);
+});
+
+/* ============ A16 · frameworks ============ */
+mxBind("#fw-mx",{
+  lg:{t:"LangGraph",d:"Cada arista es código: sabes exactamente por dónde pasa cada pedido. Pausas con interrupt(), persistencia con checkpointer, cualquier proveedor de modelos. Ideal para procesos regulados."},
+  cr:{t:"CrewAI u OpenAI Agents SDK",d:"CrewAI piensa en roles y tareas, y sumó Flows para más control. OpenAI Agents SDK piensa en handoffs con guardrails y tracing incluido. Rápidos para prototipar."},
+  ms:{t:"Microsoft Agent Framework",d:"Une AutoGen y Semantic Kernel desde su versión 1.0 de abril de 2026. Agentes y workflows en .NET o Python, observabilidad con OpenTelemetry y Azure AI Foundry."},
+  gk:{t:"Google ADK o AWS Strands",d:"ADK delega por descripción con sub_agents y te da adk web para ver cada evento: es el del Lab 3. En AWS, Strands Agents es el SDK abierto y Bedrock AgentCore la plataforma para operar agentes."}
+},"fw-cap");
+
+/* ============ A17 · labs 1 y 2 ============ */
+const LB={
+  l1:{o:'<span class="lab">M4_S1_Lab1_agente_react.ipynb</span>Parte 1  ReAct a mano, con texto plano\nParte 2  Function calling con schema Pydantic\nParte 3  Parallel tool calls\nParte 4  Error recovery: un ejecutor que no se cae\nParte 5  Salidas validadas con Pydantic\nParte 6  El mismo agente con create_agent\nParte 7  Memoria: checkpointer y thread_id',
+      n:'<span class="k">Qué observar</span><b>El ciclo sin magia</b><p>¿Qué pasa si quitas el stop en ReAct? ¿Qué hace el modelo cuando pide 24 cuotas? ¿Qué recuerda cada thread_id?</p>',
+      t:"Lab 1 · un agente es un LLM dentro de un ciclo",d:"Primero escribes el ciclo a mano y ves cada Thought, Action y Observation. Después lo reemplazas por create_agent en una línea. El framework solo te ahorra escribir el ciclo."},
+  l2:{o:'<span class="lab">M4_S1_Lab2_multiagente_langgraph.ipynb</span>Parte 1   Conoce el caso: reglas sin LLM\nParte 2   Tools instrumentadas\nParte 3   Estado compartido y guardrail\nParte 4   Supervisor con umbral de confianza\nParte 5   Académico (ReAct) y revisor\nParte 6   Matrícula: reglas en código y approval gate\nParte 7   Soporte y memoria\nParte 8-9 El grafo y los 8 pedidos con su traza\nParte 10  Comparar trazas\nParte 11  Evaluación automática (8 de 8)\nParte 12  Extensión: debate para becas',
+      n:'<span class="k">Qué observar</span><b>La ruta de cada pedido</b><p>¿Por qué ruta pasa cada pedido? ¿Qué hay en la base durante la pausa? ¿Qué pedido es el más caro y por qué?</p>',
+      t:"Lab 2 · el entregable",d:"El supervisor no responde, decide quién responde. Ninguna matrícula se registra sin una persona. Luis, con deuda, ni siquiera llega al asesor: lo frena el código."}
+};
+tabs("lb-tabs",k=>{const it=LB[k];term("lb-llm",it.o);$("lb-note").innerHTML=it.n;cap("lb-cap",it.t,it.d);});
+
+/* ============ A18 · el equipo de Pan ============ */
+const PN=[
+  ["Pan","Coordinador","Pan recibe todo y no responde de fondo","Es un LlmAgent con sub_agents. Lee la pregunta y las descripciones de sus especialistas, y decide a quién transferir. Solo responde saludos, la fecha o qué puede hacer.",'root_agent = LlmAgent(name="Pan", sub_agents=[asesor_academico, analista_ventas, operaciones], ...)'],
+  ["asesor_academico","RAG","El asesor académico busca antes de responder","Usa retrieve_context sobre Qdrant y solo responde con lo que devuelve. Si los documentos no lo dicen, sugiere escribir a admisión.",'retrieve_context("cursos del programa Data Engineer") → 5 fragmentos'],
+  ["analista_ventas","MCP","El analista consulta la base por MCP","Ve 4 tools de Neon en solo lectura: tablas, esquema, run_sql y list_projects. No tiene ni una línea de código de conexión a PostgreSQL.",'get_database_tables → describe_table_schema("ventas") → run_sql("SELECT ...")'],
+  ["revisor_cifras","AgentTool","El revisor firma cada número","El analista lo llama como tool con su borrador y la evidencia SQL. Responde un JSON con aprobado y observaciones. Nunca habla con el usuario: es Reflexion en pequeño.",'revisor_cifras(request="BORRADOR: ... EVIDENCIA: ...") → {"aprobado": true, "observaciones": []}'],
+  ["operaciones","Aprobación","Operaciones escribe, pero no sola","Valida en código que el cliente exista, que haya stock y que sean 20 unidades o menos. Luego pausa con request_confirmation y te muestra el total. Ajustes de stock de más de 10 unidades también pausan.",'<span class="warnc">⏸ Aprobar pedido: 2 x Laptop HP Pavilion 15 para Maria Elena Torres Ruiz. Total S/ 6,400.00. Stock queda en 23.</span>'],
+  ["acciones_agente","Auditoría","Cada decisión queda registrada","Aprobado o rechazado, el pedido se guarda en acciones_agente con el resumen y quién decidió. Si se aprueba, venta, detalle y stock se escriben en una sola transacción.",'<span class="good">registrar_pedido · aprobado · total 6400 · venta 31</span>\nregistrar_pedido · rechazado · total 6400']
+];
+stepper("pn",PN.length,i=>{
+  $("pn-phase").textContent=PN[i][1].toUpperCase();
+  let s=SVGCSS;const on=n=>PN[i][0]===n?"on":"past";
+  s+=node(20,85,140,60,"Pan","COORDINADOR",on("Pan"),"route");
+  [["asesor_academico",10,"search"],["analista_ventas",85,"bar-chart-3"],["operaciones",160,"lock"]].forEach(a=>{s+=path("M160 115 L190 115 L190 "+(a[1]+28)+" L215 "+(a[1]+28),PN[i][0]===a[0]||(i===3&&a[0]==="analista_ventas")||(i===5&&a[0]==="operaciones"))+node(215,a[1],200,56,a[0],"",on(a[0]),a[2]);});
+  s+=link(415,38,470,38,i===1)+node(470,10,150,56,"Qdrant","RAG",i===1?"on":"off","database");
+  s+=link(415,113,470,113,i===2)+node(470,85,150,56,"Neon MCP","4 TOOLS",i===2?"on":"off","plug");
+  s+=path("M315 141 L315 152 L640 152 L640 141",i===3,true)+node(640,85,150,56,"revisor","AGENTTOOL",on("revisor_cifras"),"shield-check");
+  s+=link(415,188,470,188,i>=4)+node(470,160,150,56,"una persona","APRUEBA",i===4?"on":"off","users")+link(620,188,640,188,i===5)+node(640,160,150,56,"auditoría","ACCIONES",on("acciones_agente"),"file-text");
+  $("pn-stage").innerHTML=svg("0 0 800 225",s);term("pn-llm",PN[i][4]);cap("pn-cap",PN[i][2],PN[i][3]);
+});
+
+/* ============ A19 · laboratorio guiado ============ */
+$("ic-v1").innerHTML=icon("brain",20,"var(--coral-d)");$("ic-v2").innerHTML=icon("database",20,"var(--coral-d)");$("ic-v3").innerHTML=icon("globe",20,"var(--coral-d)");
+const VARS={model:"gpt-4o-mini",coleccion:"documents",puerto:"8000"};
+let OS="unix",LABI=0;
+const v=k=>'<span class="good">'+VARS[k]+'</span>';
+const LAB=[
+  {t:"Clonar y crear el entorno",k:"Paso 1",b:"Un entorno aislado",p:"Clonas el repositorio y creas un entorno virtual para que las versiones de ADK y LiteLLM no choquen con otros proyectos.",
+   c:{unix:()=>'git clone https://github.com/joelespinozaro/modulo4-sesion1-lab.git\ncd modulo4-sesion1-lab\npython3 -m venv .venv\nsource .venv/bin/activate\npip install -r agente_mcp_adk/requirements.txt',
+      win:()=>'git clone https://github.com/joelespinozaro/modulo4-sesion1-lab.git\ncd modulo4-sesion1-lab\npython -m venv .venv\n.venv\\Scripts\\activate\npip install -r agente_mcp_adk\\requirements.txt'},
+   d:"Si pip tarda, es normal: google-adk trae varias dependencias de Google Cloud. Usa Python 3.11 o superior."},
+  {t:"Preparar la base en Neon",k:"Paso 2",b:"Datos y tablas de auditoría",p:"En la consola de Neon abres el SQL Editor y ejecutas el script. Crea ventas, productos, clientes, vendedores, history y acciones_agente.",
+   c:{unix:()=>'# En la consola de Neon → SQL Editor\n# pega y ejecuta: setup/database.sql\n\n# Copia dos datos:\n#  · Connection string  → DATABASE_URL\n#  · Account settings → API keys → NEON_API_KEY',
+      win:()=>'# En la consola de Neon → SQL Editor\n# pega y ejecuta: setup\\database.sql\n\n# Copia dos datos:\n#  · Connection string  → DATABASE_URL\n#  · Account settings → API keys → NEON_API_KEY'},
+   d:"Puedes ejecutar el script otra vez para reiniciar los datos de ventas: history y acciones_agente se conservan."},
+  {t:"Cargar la base de conocimiento en Qdrant",k:"Paso 3",b:"Los documentos de la academia",p:"El notebook de setup trocea los documentos, genera embeddings y los sube a tu colección. Es lo que luego usa retrieve_context.",
+   c:{unix:()=>'cd setup\ncp .env.example .env        # OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY\npip install -r requirements.txt\n# abre qdrant-db.ipynb y ejecútalo completo\n# colección: '+v("coleccion")+'\ncd ..',
+      win:()=>'cd setup\ncopy .env.example .env      # OPENAI_API_KEY, QDRANT_URL, QDRANT_API_KEY\npip install -r requirements.txt\n# abre qdrant-db.ipynb y ejecútalo completo\n# colección: '+v("coleccion")+'\ncd ..'},
+   d:"Usa el mismo nombre de colección aquí y en el agente. Es la causa número uno de «el RAG no encuentra nada»."},
+  {t:"Configurar el .env del agente",k:"Paso 4",b:"Cada variable enciende una pieza",p:"Lo que dejes vacío se desactiva y el equipo sigue funcionando. Sin DATABASE_URL, el agente de operaciones no se crea.",
+   c:{unix:()=>'cp agente_mcp_adk/.env.example agente_mcp_adk/.env\n\nOPENAI_API_KEY=sk-...\nOPENAI_MODEL='+v("model")+'\nQDRANT_URL=...   QDRANT_API_KEY=...\nQDRANT_COLLECTION_NAME='+v("coleccion")+'\nNEON_API_KEY=...   NEON_PROJECT_ID=...\nNEON_READONLY=true\nDATABASE_URL=postgresql://...',
+      win:()=>'copy agente_mcp_adk\\.env.example agente_mcp_adk\\.env\n\nOPENAI_API_KEY=sk-...\nOPENAI_MODEL='+v("model")+'\nQDRANT_URL=...   QDRANT_API_KEY=...\nQDRANT_COLLECTION_NAME='+v("coleccion")+'\nNEON_API_KEY=...   NEON_PROJECT_ID=...\nNEON_READONLY=true\nDATABASE_URL=postgresql://...'},
+   d:"NEON_READONLY=true deja el MCP en solo lectura. Las escrituras van por operaciones, con aprobación."},
+  {t:"Verificar las conexiones",k:"Paso 5",b:"Diagnóstico antes de clase",p:"El script prueba OpenAI, Qdrant, PostgreSQL, operaciones y el MCP de Neon, y te dice qué arreglar en cada caso.",
+   c:{unix:()=>'cd agente_mcp_adk\npython scripts/verificar_conexiones.py\ncd ..\n\n<span class="good">✅  Neon MCP   tools visibles: [list_projects, get_database_tables, describe_table_schema, run_sql]</span>',
+      win:()=>'cd agente_mcp_adk\npython scripts\\verificar_conexiones.py\ncd ..\n\n<span class="good">✅  Neon MCP   tools visibles: [list_projects, get_database_tables, describe_table_schema, run_sql]</span>'},
+   d:"Si Neon MCP muestra las 4 tools, el analista las va a usar. Un ➖ es una pieza opcional apagada, no un error."},
+  {t:"Levantar adk web",k:"Paso 6",b:"La interfaz para ver por dentro",p:"Desde la raíz del repositorio, adk web detecta las carpetas de agentes. Elige agente_mcp_adk a la izquierda.",
+   c:{unix:()=>'adk web --port '+v("puerto")+'\n\n# abre http://localhost:'+VARS.puerto+'\n# selector izquierdo → agente_mcp_adk',
+      win:()=>'adk web --port '+v("puerto")+'\n\n# abre http://localhost:'+VARS.puerto+'\n# selector izquierdo → agente_mcp_adk'},
+   d:"Ignora agente_mcp_2 y setup en el selector: no son agentes de ADK."},
+  {t:"Observar al equipo",k:"Paso 7",b:"Events, Trace y la terminal",p:"Recorre el guion de la tabla de abajo. En Events mira el autor de cada evento. En Trace, cuánto tardó cada agente y cada tool. En la terminal, una línea JSON por paso.",
+   c:{unix:()=>'# terminal donde corre adk web\n{"evento":"modelo","agente":"Pan","decision":"llamar: transfer_to_agent"}\n{"evento":"tool_inicio","agente":"analista_ventas","tool":"run_sql"}\n<span class="bad">{"evento":"guardrail_sql_bloqueado","sql":"drop table productos"}</span>',
+      win:()=>'# terminal donde corre adk web\n{"evento":"modelo","agente":"Pan","decision":"llamar: transfer_to_agent"}\n{"evento":"tool_inicio","agente":"analista_ventas","tool":"run_sql"}\n<span class="bad">{"evento":"guardrail_sql_bloqueado","sql":"drop table productos"}</span>'},
+   d:"Al aprobar o rechazar un pedido, revisa en Neon: select * from acciones_agente order by id desc;"}
+];
+function pintarLab(){
+  const it=LAB[LABI];
+  term("lab-code",'<span class="lab">'+(OS==="unix"?"bash · Linux / macOS":"PowerShell o CMD · Windows")+'</span>'+it.c[OS]());
+  $("lab-note").innerHTML='<span class="k">'+it.k+'</span><b>'+it.b+'</b><p>'+it.p+'</p>';
+  cap("lab-cap",it.t,it.d);
+}
+stepper("lab",LAB.length,i=>{LABI=i;pintarLab();});
+tabs("os-tabs",k=>{OS=k;pintarLab();});
+document.querySelectorAll("[id^=v-]").forEach(inp=>inp.addEventListener("input",()=>{VARS[inp.id.slice(2)]=inp.value||inp.defaultValue;pintarLab();}));
+
+/* ============ Glosario y cuestionario ============ */
+const GLOS=[
+ ["Agente","Agent","Un LLM que decide sus propios pasos: elige qué tool usar en cada vuelta y cuándo terminar."],
+ ["Workflow","Flujo fijo","Secuencia de pasos definida por el desarrollador. El LLM participa pero no decide el camino."],
+ ["Espectro de autonomía","Autonomy spectrum","Escalones de LLM con prompt, workflow, agente y multiagente. Cada uno suma flexibilidad y costo."],
+ ["Tool","Herramienta","Función que el agente puede pedir que se ejecute. Es lo único que toca el mundo real."],
+ ["Function calling","Llamada a funciones","Mecanismo por el que el modelo devuelve un JSON con name, args e id en lugar de texto."],
+ ["Schema design","Diseño de schema","Nombre, descripción y parámetros tipados de una tool. Es todo el manual que ve el modelo."],
+ ["Pydantic","Librería de Python","Valida datos contra un modelo tipado. Rechaza salidas del LLM que rompen tus reglas."],
+ ["Structured outputs","Salidas estructuradas","Garantía del proveedor de que la respuesta cumple la forma de un JSON schema. No garantiza tus reglas de negocio."],
+ ["Parallel tool calls","Llamadas en paralelo","Varias tools pedidas en una sola respuesta y ejecutadas a la vez. Solo para lecturas independientes."],
+ ["Error recovery","Recuperación de errores","Clasificar el error (transitorio, de argumentos, permanente) y responder con reintento, mensaje o fallback."],
+ ["Backoff","Espera creciente","Esperar cada vez más entre reintentos (1, 2, 4 segundos) para no saturar un servicio."],
+ ["ReAct","Reasoning + Acting","Patrón que alterna pensamiento, acción y observación hasta tener la respuesta."],
+ ["Tool-Use-Only","Solo uso de tools","Patrón de una pasada: el modelo elige la tool y responde sin escribir razonamiento."],
+ ["Plan-and-Execute","Planificar y ejecutar","Un modelo arma el plan completo y otro ejecuta cada paso. Un replanner ajusta si algo cambia."],
+ ["Reflexion","Reflexión verbal","El agente evalúa su resultado con un criterio y reintenta con una lección escrita."],
+ ["LATS","Language Agent Tree Search","Explora varios caminos como un árbol, los puntúa y expande el mejor. Potente y caro."],
+ ["MCP","Model Context Protocol","Estándar abierto para que un agente use tools publicadas por un servidor externo."],
+ ["Servidor MCP","MCP server","Sistema que publica sus tools por MCP, como el de Neon para PostgreSQL."],
+ ["tool_filter","Filtro de tools","Parámetro de McpToolset en ADK que limita qué tools del servidor ve el agente."],
+ ["Memoria de corto plazo","Short-term memory","La conversación actual. En LangGraph la guarda el checkpointer por thread_id."],
+ ["Memoria de largo plazo","Long-term memory","Hechos del usuario que sobreviven entre sesiones. En LangGraph vive en el store."],
+ ["Memoria episódica","Episodic memory","Registro de lo que pasó antes: casos, tickets y decisiones con su fecha."],
+ ["Memoria semántica","Semantic memory","Hechos del dominio y sus relaciones, por ejemplo en un knowledge graph."],
+ ["Checkpointer","Persistencia de estado","Componente de LangGraph que guarda el estado del grafo en cada paso y permite pausar y reanudar."],
+ ["Shared state","Estado compartido","Pizarra común que todos los nodos leen y escriben. Es el modelo de LangGraph."],
+ ["Supervisor","Coordinador","Agente que clasifica el pedido y decide qué especialista lo atiende, sin resolverlo él."],
+ ["sub_agents","Subagentes en ADK","Especialistas de un LlmAgent. El coordinador les transfiere la conversación con transfer_to_agent."],
+ ["AgentTool","Agente como tool","En ADK, envolver un agente para que otro lo llame como función y siga al mando."],
+ ["HITL","Human-in-the-loop","Diseño en el que el agente se detiene y una persona decide antes de continuar."],
+ ["Approval gate","Puerta de aprobación","Pausa obligatoria antes de una acción irreversible, como registrar un pago o una matrícula."],
+ ["interrupt()","Pausa en LangGraph","Función que detiene el grafo dentro de un nodo y espera un Command(resume=...)."],
+ ["request_confirmation","Confirmación en ADK","Método del ToolContext que pausa una tool hasta que una persona confirma o rechaza en adk web."],
+ ["Umbral de confianza","Confidence threshold","Valor bajo el cual el agente pregunta o deriva en vez de responder."],
+ ["Traza","Trace","Registro de cada paso de un pedido: quién decidió, qué tool usó, cuánto tardó y cuánto costó."],
+ ["Callback","Gancho","Función que el framework ejecuta antes o después de una tool, del modelo o del agente. Sirve para trazas y guardrails."],
+ ["Guardrail","Barrera de seguridad","Regla en código que bloquea una entrada o una acción peligrosa, como un DROP TABLE."],
+ ["adk web","Interfaz de ADK","Interfaz de desarrollo de Google ADK con las pestañas Events, Trace y State."]
+];
+function renderGlos(q){
+  const t=(q||"").trim().toLowerCase();
+  const list=GLOS.filter(g=>!t||(g[0]+" "+g[1]+" "+g[2]).toLowerCase().includes(t));
+  const box=$("glist");
+  if(!list.length){box.innerHTML='<div class="gnone">Sin coincidencias. Prueba con otra palabra, por ejemplo: memoria, MCP, pausa.</div>';return;}
+  box.innerHTML=list.map((g,k)=>'<div class="gitem" style="animation-delay:'+Math.min(k*25,300)+'ms"><button type="button" aria-expanded="false"><span class="gt">'+g[0]+'</span><span class="gs">'+g[1]+'</span><span class="gx">+</span></button><div class="gd">'+g[2]+'</div></div>').join("");
+  box.querySelectorAll(".gitem button").forEach(btn=>btn.addEventListener("click",()=>{
+    const item=btn.closest(".gitem"),open=item.classList.toggle("open");
+    btn.setAttribute("aria-expanded",String(open));
+  }));
+}
+$("gs").addEventListener("input",e=>renderGlos(e.target.value));
+renderGlos("");
+
+const Q=[
+ {tag:"Bloque 1 · Workflow o agente",q:"Un banco quiere extraer los datos de un voucher, validarlos contra el sistema y guardarlos. Los pasos son siempre los mismos. ¿Qué conviene?",
+  opts:["Un workflow con tools, porque el flujo se puede dibujar de antemano","Un agente ReAct, porque usa varias tools","Un sistema multiagente con un supervisor","Un agente con LATS para no equivocarse"],ok:0,
+  why:"Si puedes dibujar todo el flujo, un workflow es más barato, rápido y fácil de probar. Usar varias tools no justifica un agente: lo justifica que el camino dependa de lo que se descubre."},
+ {tag:"Bloque 4 · Function calling",q:"El prompt del agente dice «nunca registres una venta sin confirmar» y aun así un día la registra. ¿Dónde está el problema de diseño?",
+  opts:["La regla vivía solo en el prompt, cuando debía estar en el código que ejecuta la tool","El modelo no era lo bastante potente","Faltaba repetir la regla en mayúsculas","La temperatura del modelo era muy alta"],ok:0,
+  why:"El LLM solo propone llamadas: tu código decide si las ejecuta. Las reglas duras van en código, por ejemplo con request_confirmation en ADK o interrupt() en LangGraph. Reforzar el prompt reduce el riesgo pero no lo elimina."},
+ {tag:"Bloque 6 · MCP",q:"Conectas tu agente al servidor MCP de Neon, que ofrece unas 30 tools. ¿Qué es lo más importante antes de ponerlo en uso?",
+  opts:["Filtrar las tools que ve el agente y activar solo lectura","Describir las 30 tools en el prompt para que elija mejor","Darle todas para que sea más capaz","Cambiar a un modelo más grande"],ok:0,
+  why:"Mínimo privilegio: el analista del Lab 3 ve 4 tools con tool_filter y la URL lleva readonly=true. Con todas visibles, delete_project queda a una mala decisión de distancia."},
+ {tag:"Bloque 7 · Memoria",q:"Ana vuelve una semana después y el asistente ya no sabe que es exalumna, aunque lo dijo en el primer chat. ¿Qué faltó?",
+  opts:["Guardar ese hecho en la memoria de largo plazo, no solo en el hilo","Aumentar la ventana de contexto del modelo","Usar el mismo thread_id para siempre","Agregar más documentos al RAG"],ok:0,
+  why:"El hilo es memoria de corto plazo: se recorta o termina. Un hecho estable del usuario va al store de largo plazo, con fecha y origen. Reusar el mismo thread_id para siempre solo hace crecer el costo de cada turno."},
+ {tag:"Bloque 14 · Lab 3",q:"En el equipo de Pan, ¿por qué revisor_cifras es un AgentTool y no un sub_agent más?",
+  opts:["Porque el analista lo llama como función y sigue al mando: el revisor nunca habla con el usuario","Porque los sub_agents no pueden usar modelos de OpenAI","Porque AgentTool es más barato en tokens","Porque ADK solo permite tres sub_agents"],ok:0,
+  why:"Con sub_agents se transfiere la conversación. Con AgentTool un agente consulta a otro y sigue en control, como pedir una segunda opinión. Es la forma natural de un revisor: Reflexion en pequeño."}
+];
+
+/* ============ Cuestionario ============ */
+[0,2,1,3,2].forEach((r,k)=>{const o=Q[k].opts;if(r){Q[k].opts=o.slice(4-r).concat(o.slice(0,4-r));}Q[k].ok=r;});
+const LET=["A","B","C","D"],RC=2*Math.PI*19;
+let qi=0,qok=0,marks=[],answered=false;
+const qBody=$("q-body"),qFoot=$("q-foot"),qNum=$("q-num"),qScore=$("q-score");
+$("q-ring").innerHTML='<svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="#E7EAF0" stroke-width="5"/>'+
+  '<circle class="qa" id="qarc" cx="23" cy="23" r="19" fill="none" stroke="#FF7A50" stroke-width="5" stroke-linecap="round" transform="rotate(-90 23 23)" stroke-dasharray="'+RC.toFixed(1)+'" stroke-dashoffset="'+RC.toFixed(1)+'"/>'+
+  '<text id="qtxt" x="23" y="27" text-anchor="middle">1</text></svg>';
+function ring(done,label){
+  $("qarc").setAttribute("stroke-dashoffset",(RC*(1-done)).toFixed(1));
+  $("qtxt").textContent=label;
+}
+function paintQ(){
+  answered=false;
+  const it=Q[qi];
+  qNum.innerHTML="Pregunta "+(qi+1)+"<small>de "+Q.length+"</small>";
+  ring(qi/Q.length,String(qi+1));
+  qScore.textContent=qok+" correctas";
+  qBody.innerHTML='<p class="qtag">'+it.tag+'</p><p class="qq">'+it.q+'</p><div class="opts" id="opts">'+
+    it.opts.map((o,k)=>'<button class="opt" data-k="'+k+'" style="animation-delay:'+(80+k*70)+'ms"><span class="ol">'+LET[k]+'</span><span>'+o+'</span></button>').join("")+
+    '</div><div class="qfb" id="qfb"></div>';
+  qFoot.innerHTML='<span class="qsc">Elige una opción para ver la explicación</span>';
+  document.querySelectorAll("#opts .opt").forEach(b=>b.addEventListener("click",()=>answer(+b.dataset.k)));
+}
+function answer(k){
+  if(answered)return;answered=true;
+  const it=Q[qi],good=k===it.ok;
+  marks.push(good?1:0);
+  if(good)qok++;else it._mine=it.opts[k];
+  document.querySelectorAll("#opts .opt").forEach((b,idx)=>{
+    b.disabled=true;
+    if(idx===it.ok)b.classList.add("right");
+    else if(idx===k)b.classList.add("wrong");
+    else b.classList.add("fade");
+  });
+  const fb=$("qfb");
+  fb.className="qfb show "+(good?"ok":"no");
+  fb.innerHTML='<span class="t">'+(good?"Correcto":"Revisa esto")+'</span>'+it.why;
+  qScore.textContent=qok+" correctas";
+  ring((qi+1)/Q.length,String(qi+1));
+  qFoot.innerHTML='<span class="qsc">'+(qi+1)+" de "+Q.length+'</span><button class="abtn pri" id="qnext">'+(qi===Q.length-1?"Ver resultado":"Siguiente pregunta")+'</button>';
+  $("qnext").addEventListener("click",()=>{if(qi===Q.length-1)paintRes();else{qi++;paintQ();}});
+}
+function paintRes(){
+  ring(1,"fin");
+  qNum.innerHTML="Resultado<small>cuestionario completo</small>";
+  const pct=Math.round((qok/Q.length)*100);
+  let msg;
+  if(pct>=87)msg="Dominas las decisiones de diseño de un agente: cuándo usarlo, cómo actúa, qué recuerda y dónde frena. Estás listo para defender tu arquitectura en el entregable.";
+  else if(pct>=67)msg="Buena base. Vuelve a los bloques de las preguntas que fallaste, juega con sus artefactos y repite el cuestionario.";
+  else msg="Conviene repasar. Recorre otra vez los artefactos 02, 06, 08, 09 y 18, que sostienen casi todas las decisiones de la sesión.";
+  const wrong=Q.filter((it,k)=>marks[k]===0);
+  qBody.innerHTML='<div class="res"><div class="big" id="bigsc">0</div><div class="sub">de '+Q.length+' · '+pct+'% correcto</div>'+
+    '<div class="spark">'+marks.map((m,k)=>'<i class="'+(m?"k":"f")+'" style="animation-delay:'+(k*45)+'ms"></i>').join("")+'</div>'+
+    '<div class="msg">'+msg+'</div>'+
+    (wrong.length?'<div style="max-width:650px;margin:24px auto 0"><p class="qtag" style="text-align:left">Para repasar</p>'+
+      wrong.map(w=>'<div class="revi"><span class="rq">'+w.q+'</span><span class="ra">Tu respuesta: '+(w._mine||"")+'</span><br><span class="rb">Correcta: '+w.opts[w.ok]+'</span></div>').join("")+'</div>':"")+
+    '</div>';
+  let n=0;const el=$("bigsc");
+  const iv=setInterval(()=>{n++;el.textContent=n;if(n>=qok)clearInterval(iv);},70);
+  if(qok===0)el.textContent="0";
+  qScore.textContent=qok+" correctas";
+  qFoot.innerHTML='<button class="abtn pri" id="qagain">Repetir el cuestionario</button><button class="abtn" id="qtop">Volver al inicio</button>';
+  $("qagain").addEventListener("click",()=>{qi=0;qok=0;marks=[];Q.forEach(x=>delete x._mine);paintQ();});
+  $("qtop").addEventListener("click",()=>$("s0").scrollIntoView({behavior:"smooth",block:"start"}));
+}
+paintQ();
+
+</script>
+</body>
+</html>
