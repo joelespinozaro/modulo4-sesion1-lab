@@ -1,86 +1,80 @@
 """
-Agente ADK — migración de agente_mcp de LangChain/LangGraph a Google ADK.
+Agente ADK de la academia: un equipo de agentes que se ve trabajar en adk web.
 
-Ejecutar la interfaz nativa de desarrollo desde claude_agente_mcp_adk/:
-    adk web .
+    usuario ──► Pan (coordinador)
+                 ├─ transfer_to_agent ─► asesor_academico   RAG en Qdrant
+                 ├─ transfer_to_agent ─► analista_ventas    MCP de Neon (solo lectura)
+                 │                         └─ AgentTool ─► revisor_cifras
+                 └─ transfer_to_agent ─► operaciones        escribe en la BD con aprobación humana
 
-Variables de entorno requeridas (ver .env.example):
-    OPENAI_API_KEY, OPENAI_MODEL
-Opcionales:
-    DATABASE_URL (historial PostgreSQL)
-    QDRANT_URL, QDRANT_API_KEY, QDRANT_COLLECTION_NAME (RAG)
-    NEON_API_KEY (MCP Neon BD)
+Ejecutar la interfaz desde la raíz del repositorio:
+    adk web
+y elegir "agente_mcp_adk" en el selector de la izquierda.
+
+Obligatorio: OPENAI_API_KEY. Lo demás es opcional (ver .env.example): si falta una pieza,
+ese especialista trabaja sin ella o no se crea, y el resto del equipo sigue funcionando.
 """
 
-import os
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Agrega claude_agente_mcp_adk/ al path para que src.* sea importable
 _project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(_project_root))
-
-# Carga .env desde la raíz del proyecto (ADK ya lo hace, pero esto es por si se ejecuta directamente)
 load_dotenv(_project_root / ".env")
 
-from google.adk.agents import LlmAgent
-from google.adk.models.lite_llm import LiteLlm
+from google.adk.agents import LlmAgent  # noqa: E402
 
-from src.callbacks.history_callback import build_history_callback
-from src.config import OPENAI_API_KEY, OPENAI_MODEL
-from src.tools.local_tools import get_current_date
-from src.tools.mcp_setup import build_mcp_toolset
-from src.tools.rag_tool import build_rag_tool
-from src.utils.logger import get_logger
+from src.agents.academico import crear_academico  # noqa: E402
+from src.agents.analista import crear_analista  # noqa: E402
+from src.agents.modelo import MODEL_ID, modelo  # noqa: E402
+from src.agents.operaciones import crear_operaciones  # noqa: E402
+from src.callbacks.history_callback import build_history_callback  # noqa: E402
+from src.callbacks.observabilidad import after_model, after_tool, before_tool  # noqa: E402
+from src.config import DATABASE_URL  # noqa: E402
+from src.tools.local_tools import get_current_date  # noqa: E402
+from src.tools.mcp_setup import build_mcp_toolset  # noqa: E402
+from src.tools.rag_tool import build_rag_tool  # noqa: E402
+from src.utils.logger import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 
-# LiteLLM lee OPENAI_API_KEY del entorno
-os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+# Historial: el mismo callback en todos los agentes que hablan con el usuario.
+# Guarda una sola fila por turno, la del agente que dio la respuesta final.
+_historial = build_history_callback()
 
-SYSTEM_INSTRUCTION = (
-    "Eres un asistente útil y amigable, tu nombre es Pan. "
-    "Responde siempre de forma clara y concisa. "
-    "Tienes acceso a la base de datos del usuario a través de herramientas MCP de Neon. "
-    "Cuando te pregunten por datos que viven en la base de datos (por ejemplo cantidad de "
-    "productos, registros, tablas, etc.), usa esas herramientas para consultar la base de "
-    "datos real en vez de responder de memoria o inventar un número. Si necesitas identificar "
-    "primero el proyecto o la base de datos, usa las herramientas de listado disponibles antes "
-    "de ejecutar la consulta SQL. No inventes."
-)
+especialistas = [
+    crear_academico(build_rag_tool(), _historial),
+    crear_analista(build_mcp_toolset(), _historial),
+]
+if DATABASE_URL:
+    especialistas.append(crear_operaciones(_historial))
+else:
+    logger.info("DATABASE_URL vacío: el agente de operaciones no se crea")
 
-# --- Herramientas ---
-_tools: list = [get_current_date]
+_nombres = ", ".join(a.name for a in especialistas)
 
-_mcp = build_mcp_toolset()
-if _mcp is not None:
-    _tools.append(_mcp)
-    logger.info("Herramienta MCP Neon agregada al agente")
-
-_rag = build_rag_tool()
-if _rag is not None:
-    _tools.append(_rag)
-    logger.info("Herramienta RAG (Qdrant) agregada al agente")
-
-# --- Callback de historial ---
-_after_agent_cb = build_history_callback()
-
-# --- Modelo: OpenAI vía LiteLLM ---
-_model_id = OPENAI_MODEL if OPENAI_MODEL.startswith("openai/") else f"openai/{OPENAI_MODEL}"
-
-# --- Agente raíz (requerido por adk web) ---
 root_agent = LlmAgent(
     name="Pan",
-    model=LiteLlm(model=_model_id),
-    description="Asistente conversacional con acceso a BD vía MCP y búsqueda en base de conocimiento",
-    instruction=SYSTEM_INSTRUCTION,
-    tools=_tools,
-    after_agent_callback=_after_agent_cb,
+    model=modelo(),
+    description="Coordinador del asistente de la academia y su tienda de tecnología.",
+    instruction=f"""Eres Pan, el coordinador del asistente de la academia. Respondes en español.
+
+No respondes preguntas de fondo: decides qué especialista las atiende y le transfieres la conversación.
+Especialistas disponibles: {_nombres}.
+- asesor_academico: programas, cursos, docentes, horarios, sedes, matrícula, reglamento.
+- analista_ventas: preguntas de datos sobre ventas, productos, stock, clientes y vendedores.
+- operaciones: registrar un pedido o ajustar stock (si no está en la lista, di que esa función no está habilitada).
+
+Solo respondes tú mismo saludos, la fecha (get_current_date) o qué puedes hacer.
+Si la pregunta es ambigua, haz una pregunta corta para aclararla antes de transferir.""",
+    tools=[get_current_date],
+    sub_agents=especialistas,
+    before_tool_callback=before_tool,
+    after_tool_callback=after_tool,
+    after_model_callback=after_model,
+    after_agent_callback=_historial,
 )
 
-logger.info(
-    "Agente inicializado",
-    extra={"model": _model_id, "tools": len(_tools), "history_enabled": _after_agent_cb is not None},
-)
+logger.info("Equipo de agentes inicializado", extra={"model": MODEL_ID, "especialistas": _nombres, "historial": _historial is not None})

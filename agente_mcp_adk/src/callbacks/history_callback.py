@@ -24,9 +24,14 @@ def build_history_callback() -> Optional[Callable]:
         logger.warning("No se pudo inicializar la BD — historial no se persistirá")
         return None
 
+    guardados: set[str] = set()  # invocaciones ya guardadas: una fila por turno aunque respondan varios agentes
+
     def after_agent_callback(callback_context) -> None:
         """Guarda el par pregunta/respuesta del turno actual en la BD."""
         try:
+            invocation_id = getattr(callback_context, "invocation_id", None)
+            if invocation_id in guardados:
+                return None
             # Extraer pregunta del usuario
             user_content = callback_context.user_content
             if not user_content or not user_content.parts:
@@ -42,10 +47,10 @@ def build_history_callback() -> Optional[Callable]:
 
             # Extraer respuesta del agente desde los eventos de la sesión
             session = callback_context.session
-            invocation_id = getattr(callback_context, "invocation_id", None)
-            agent_name = callback_context.agent_name
-
-            answer = _extract_agent_answer(session.events, agent_name, invocation_id)
+            answer = _extract_agent_answer(session.events, invocation_id)
+            if not answer:
+                return None  # este agente transfirió: guardará el que responda
+            input_tokens, output_tokens = _sum_tokens(session.events, invocation_id)
 
             # Persistir en PostgreSQL
             db = session_factory()
@@ -57,10 +62,13 @@ def build_history_callback() -> Optional[Callable]:
                         session_id=session.id,
                         question=question,
                         answer=answer or "(sin respuesta)",
-                        input_tokens=0,
-                        output_tokens=0,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
                     )
                 )
+                guardados.add(invocation_id)
+                if len(guardados) > 1000:
+                    guardados.clear()
                 logger.info("Historial guardado", extra={"session_id": session.id})
             finally:
                 db.close()
@@ -73,14 +81,14 @@ def build_history_callback() -> Optional[Callable]:
     return after_agent_callback
 
 
-def _extract_agent_answer(events: list, agent_name: str, invocation_id: Optional[str]) -> str:
-    """Busca el último texto de respuesta del agente en los eventos de la sesión."""
+def _extract_agent_answer(events: list, invocation_id: Optional[str]) -> str:
+    """Busca el último texto que algún agente le dio al usuario en este turno."""
     for event in reversed(events):
         # Filtrar por invocación actual si está disponible
         if invocation_id and getattr(event, "invocation_id", None) != invocation_id:
             continue
 
-        if event.author != agent_name:
+        if event.author == "user" or getattr(event, "partial", False):
             continue
 
         if not event.content or not event.content.parts:
@@ -91,3 +99,16 @@ def _extract_agent_answer(events: list, agent_name: str, invocation_id: Optional
                 return part.text
 
     return ""
+
+
+def _sum_tokens(events: list, invocation_id: Optional[str]) -> tuple[int, int]:
+    """Suma los tokens de todas las llamadas al modelo del turno actual."""
+    entrada = salida = 0
+    for event in events:
+        if invocation_id and getattr(event, "invocation_id", None) != invocation_id:
+            continue
+        u = getattr(event, "usage_metadata", None)
+        if u:
+            entrada += u.prompt_token_count or 0
+            salida += u.candidates_token_count or 0
+    return entrada, salida

@@ -5,12 +5,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# El agente vive en /app/agente_mcp_adk para que adk web lo muestre con ese nombre
+COPY . ./agente_mcp_adk
 
-ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8080
 
-# adk web descubre agent.py en el directorio actual
-CMD ["adk", "web", ".", "--host", "0.0.0.0", "--port", "8080"]
+# adk web lista cada carpeta de /app como un agente
+CMD ["adk", "web", "/app", "--host", "0.0.0.0", "--port", "8080"]
